@@ -345,7 +345,7 @@ function Onboarding({t, onDone}) {
 
   const guestMode = () => {
     const u = {id:"guest_"+Date.now(), name:t("Invitado","Guest"), flag:"🌍", username:"guest", isGuest:true};
-    try{localStorage.setItem("wc26_user",JSON.stringify(u));}catch(e){}
+    // Don't save guest to localStorage so next visit shows login
     onDone(u);
   };
 
@@ -1088,7 +1088,12 @@ function SettingsTab({t, lang, setLang, notifs, setNotifs, user}) {
       </div>
       {user&&!user.isGuest&&(
         <button onClick={()=>{
-          try{localStorage.removeItem("wc26_user");}catch(e){}
+          try{
+            localStorage.removeItem("wc26_user");
+            localStorage.removeItem("wc26_m");
+            localStorage.removeItem("wc26_p");
+            localStorage.removeItem("wc26_r");
+          }catch(e){}
           window.location.reload();
         }} style={{width:"100%",marginTop:10,padding:"9px",background:"rgba(230,57,70,0.1)",border:"1px solid rgba(230,57,70,0.3)",borderRadius:10,color:"#FF6B7A",fontSize:13,cursor:"pointer",fontWeight:600}}>
           🚪 {t("Cerrar sesion","Sign out")}
