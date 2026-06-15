@@ -260,19 +260,30 @@ function Onboarding({t, onDone}) {
     if(!email.trim()||!pass.trim()) return;
     setLoading(true); setErr("");
     try {
-      const data = await authFetch("/token?grant_type=password", {email:email.trim(), password:pass.trim()});
-      if(data.error) { setErr(data.error_description||data.error); setLoading(false); return; }
+      const res = await fetch(SB_URL + "/auth/v1/token?grant_type=password", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","apikey":SB_KEY},
+        body:JSON.stringify({email:email.trim(), password:pass.trim()})
+      });
+      const data = await res.json();
+      if(data.error || !data.access_token) {
+        setErr(data.error_description || data.msg || data.error || t("Email o contrasena incorrectos","Wrong email or password"));
+        setLoading(false); return;
+      }
       // Get profile from DB
-      const profile = await sbFetch(`/rest/v1/profiles?user_id=eq.${data.user.id}&limit=1`,{headers:{"Authorization":"Bearer "+data.access_token}});
+      const profRes = await fetch(SB_URL + "/rest/v1/profiles?user_id=eq." + data.user.id + "&limit=1", {
+        headers:{"apikey":SB_KEY,"Authorization":"Bearer "+data.access_token}
+      });
+      const profile = await profRes.json();
       if(profile && profile[0]) {
-        const u = {...profile[0], token: data.access_token, supabaseId: data.user.id};
+        const u = {...profile[0], token: data.access_token, supabaseId: data.user.id, id: data.user.id};
+        try{localStorage.setItem("wc26_user", JSON.stringify(u));}catch(e){}
         onDone(u);
       } else {
-        // New user needs profile setup
         setAuthData(data);
         setMode("profile");
       }
-    } catch(e) { setErr(t("Error de conexion","Connection error")); }
+    } catch(e) { setErr("Error: " + e.message); }
     setLoading(false);
   };
 
