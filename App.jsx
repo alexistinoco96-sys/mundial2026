@@ -296,8 +296,9 @@ function Onboarding({t, onDone}) {
     if(!name.trim()||!flag||!authData) return;
     setLoading(true); setErr("");
     try {
+      const flagVal = typeof flag === "string" ? flag : (flag?.flag || "🌍");
       const username = name.trim().toLowerCase().replace(/ +/g,"_") + "_" + Date.now().toString().slice(-4);
-      const profileData = { user_id: authData.user.id, name: name.trim(), flag, username };
+      const profileData = { user_id: authData.user.id, name: name.trim(), flag: flagVal, username };
       const res = await fetch(SB_URL + "/rest/v1/profiles", {
         method:"POST",
         headers:{
