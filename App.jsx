@@ -155,10 +155,18 @@ export default function App() {
 
   const handlePred = (id, pick) => { if(!user){setShowOnboard(true);return;} saveP({...preds,[id]:pick}); };
   const handleResult = (id, hs, as2) => saveM(matches.map(m=>m.id===id?{...m,hs,as:as2}:m));
-  const handleUser = (name, flag) => {
-    const u={id:Date.now()+"",name,flag,username:name.toLowerCase().replace(/\s+/g,"_")};
-    try{localStorage.setItem("wc26_user",JSON.stringify(u));}catch(e){}
-    setUser(u); setShowOnboard(false);
+  const handleUser = (u) => {
+    // u is a full user object from Supabase or guest
+    const userData = {
+      ...u,
+      flag: typeof u.flag === "string" ? u.flag : "🌍",
+      id: u.id || u.user_id || Date.now()+"",
+    };
+    if(!u.isGuest) {
+      try{localStorage.setItem("wc26_user",JSON.stringify(userData));}catch(e){}
+    }
+    setUser(userData); 
+    setShowOnboard(false);
   };
   const goTab = (id) => { setAnim(true); setTimeout(()=>{setTab(id);setAnim(false);},120); };
 
