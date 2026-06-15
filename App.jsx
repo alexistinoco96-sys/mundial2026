@@ -297,11 +297,37 @@ function Onboarding({t, onDone}) {
     setLoading(true); setErr("");
     try {
       const username = name.trim().toLowerCase().replace(/ +/g,"_") + "_" + Date.now().toString().slice(-4);
-      const profileData = { user_id: authData.user.id, name: name.trim(), flag, username, created_at: new Date().toISOString() };
-      await sbFetch("/rest/v1/profiles", { method:"POST", body:JSON.stringify(profileData), headers:{"Authorization":"Bearer "+authData.access_token,"Prefer":"return=minimal"} });
-      const u = {...profileData, token: authData.access_token, supabaseId: authData.user.id};
+      const profileData = { user_id: authData.user.id, name: name.trim(), flag, username };
+      const res = await fetch(SB_URL + "/rest/v1/profiles", {
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "apikey": SB_KEY,
+          "Authorization":"Bearer "+authData.access_token,
+          "Prefer":"return=minimal"
+        },
+        body: JSON.stringify(profileData)
+      });
+      if(!res.ok) {
+        const errData = await res.json().catch(()=>({}));
+        // If duplicate username, try with different suffix
+        if(errData.code === "23505") {
+          profileData.username = name.trim().toLowerCase().replace(/ +/g,"_") + "_" + Math.random().toString(36).slice(2,6);
+          await fetch(SB_URL + "/rest/v1/profiles", {
+            method:"POST",
+            headers:{"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+authData.access_token,"Prefer":"return=minimal"},
+            body: JSON.stringify(profileData)
+          });
+        } else {
+          setErr("Error: " + (errData.message || errData.hint || JSON.stringify(errData)));
+          setLoading(false);
+          return;
+        }
+      }
+      const u = {...profileData, token: authData.access_token, supabaseId: authData.user.id, id: authData.user.id};
+      try{localStorage.setItem("wc26_user", JSON.stringify(u));}catch(e){}
       onDone(u);
-    } catch(e) { setErr(t("Error guardando perfil","Error saving profile")); }
+    } catch(e) { setErr(t("Error guardando perfil: ","Error saving profile: ") + e.message); }
     setLoading(false);
   };
 
