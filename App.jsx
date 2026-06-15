@@ -193,7 +193,14 @@ export default function App() {
             </div>
           </div>
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            {user&&<span style={{fontSize:10,color:C.gold,background:C.goldDim,padding:"2px 8px",borderRadius:20,border:`1px solid ${C.goldBorder}`}}>{user.flag} {user.name}</span>}
+            {user&&(
+              <button onClick={()=>{
+                try{localStorage.removeItem("wc26_user");}catch(e){}
+                window.location.reload();
+              }} style={{fontSize:10,color:C.gold,background:C.goldDim,padding:"2px 8px",borderRadius:20,border:`1px solid ${C.goldBorder}`,cursor:"pointer"}}>
+                {user.flag} {user.name} ✕
+              </button>
+            )}
             <button onClick={()=>setLang(l=>l==="es"?"en":"es")} style={{background:C.grayDark,border:"none",color:C.white,padding:"3px 8px",borderRadius:20,fontSize:11,cursor:"pointer",fontWeight:700}}>{lang==="es"?"EN":"ES"}</button>
             <button onClick={()=>setNotifs(n=>!n)} style={{background:"none",border:"none",fontSize:17,cursor:"pointer"}}>{notifs?"🔔":"🔕"}</button>
           </div>
@@ -1086,7 +1093,7 @@ function SettingsTab({t, lang, setLang, notifs, setNotifs, user}) {
         <div style={{fontSize:11,color:C.gray,marginTop:4}}>Jun 11 - Jul 19 · 48 {t("equipos","teams")} · 104 {t("partidos","matches")}</div>
         <div style={{fontSize:10,color:C.gray,marginTop:2}}>v5.0 · Made with Claude</div>
       </div>
-      {user&&!user.isGuest&&(
+      {user&&(
         <button onClick={()=>{
           try{
             localStorage.removeItem("wc26_user");
@@ -1096,7 +1103,7 @@ function SettingsTab({t, lang, setLang, notifs, setNotifs, user}) {
           }catch(e){}
           window.location.reload();
         }} style={{width:"100%",marginTop:10,padding:"9px",background:"rgba(230,57,70,0.1)",border:"1px solid rgba(230,57,70,0.3)",borderRadius:10,color:"#FF6B7A",fontSize:13,cursor:"pointer",fontWeight:600}}>
-          🚪 {t("Cerrar sesion","Sign out")}
+          🚪 {user?.isGuest ? t("Iniciar sesion / Registrarse","Sign in / Register") : t("Cerrar sesion","Sign out")}
         </button>
       )}
     </div>
