@@ -229,29 +229,12 @@ export default function App() {
   );
 }
 
-// ─── AUTH HELPERS ─────────────────────────────────────────────────────────────
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
 const SB_URL = "https://asntocdbpqnawneyszpx.supabase.co";
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzbnRvY2RicHFuYXduZXlzenB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDAwMjQsImV4cCI6MjA5NjExNjAyNH0.PKBJ6s2zEbETWmzKlqhaQGNMH6yfrlCgbZdZWKZdDjo";
 
-const sbFetch = async (path, opts={}) => {
-  const res = await fetch(SB_URL + path, {
-    ...opts,
-    headers: { "Content-Type":"application/json", "apikey":SB_KEY, "Authorization":"Bearer "+SB_KEY, ...(opts.headers||{}) }
-  });
-  return res.json();
-};
-
-const authFetch = async (path, body, token) => {
-  const res = await fetch(SB_URL + "/auth/v1" + path, {
-    method:"POST",
-    headers:{"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+(token||SB_KEY)},
-    body:JSON.stringify(body)
-  });
-  return res.json();
-};
-
 function Onboarding({t, onDone}) {
-  const [mode, setMode] = useState("login"); // login | register | profile
+  const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [name, setName] = useState("");
@@ -261,100 +244,80 @@ function Onboarding({t, onDone}) {
   const [err, setErr] = useState("");
   const [authData, setAuthData] = useState(null);
 
-  const filtered = TEAMS.filter(tm=>q===""||tm.name.toLowerCase().includes(q.toLowerCase()));
+  const filtered = TEAMS.filter(tm => q===""||tm.name.toLowerCase().includes(q.toLowerCase()));
 
-  const handleLogin = async () => {
+  const doLogin = async () => {
     if(!email.trim()||!pass.trim()) return;
     setLoading(true); setErr("");
     try {
-      const res = await fetch(SB_URL + "/auth/v1/token?grant_type=password", {
+      const res = await fetch(SB_URL+"/auth/v1/token?grant_type=password", {
         method:"POST",
         headers:{"Content-Type":"application/json","apikey":SB_KEY},
-        body:JSON.stringify({email:email.trim(), password:pass.trim()})
+        body:JSON.stringify({email:email.trim(),password:pass.trim()})
       });
-      const data = await res.json();
-      if(data.error || !data.access_token) {
-        setErr(data.error_description || data.msg || data.error || t("Email o contrasena incorrectos","Wrong email or password"));
+      const d = await res.json();
+      if(!d.access_token) {
+        setErr(d.error_description || d.msg || t("Email o contrasena incorrectos","Wrong email or password"));
         setLoading(false); return;
       }
-      // Get profile from DB
-      const profRes = await fetch(SB_URL + "/rest/v1/profiles?user_id=eq." + data.user.id + "&limit=1", {
-        headers:{"apikey":SB_KEY,"Authorization":"Bearer "+data.access_token}
+      const pRes = await fetch(SB_URL+"/rest/v1/profiles?user_id=eq."+d.user.id+"&limit=1", {
+        headers:{"apikey":SB_KEY,"Authorization":"Bearer "+d.access_token}
       });
-      const profile = await profRes.json();
-      if(profile && profile[0]) {
-        const u = {...profile[0], token: data.access_token, supabaseId: data.user.id, id: data.user.id};
-        try{localStorage.setItem("wc26_user", JSON.stringify(u));}catch(e){}
+      const prof = await pRes.json();
+      if(Array.isArray(prof) && prof[0]) {
+        const u = {...prof[0], flag: String(prof[0].flag||"🌍"), token:d.access_token, id:d.user.id};
+        try{localStorage.setItem("wc26_user",JSON.stringify(u));}catch(e){}
         onDone(u);
       } else {
-        setAuthData(data);
+        setAuthData(d);
         setMode("profile");
       }
-    } catch(e) { setErr("Error: " + e.message); }
+    } catch(e){ setErr("Error: "+e.message); }
     setLoading(false);
   };
 
-  const handleRegister = async () => {
-    if(!email.trim()||!pass.trim()||pass.length<6) { setErr(t("Contrasena min 6 caracteres","Password min 6 chars")); return; }
+  const doRegister = async () => {
+    if(!email.trim()||pass.length<6){ setErr(t("Contrasena min 6 caracteres","Password min 6 chars")); return; }
     setLoading(true); setErr("");
     try {
-      const data = await authFetch("/signup", {email:email.trim(), password:pass.trim()});
-      if(data.error) { setErr(data.error_description||data.error); setLoading(false); return; }
-      if(data.access_token) {
-        setAuthData(data);
-        setMode("profile");
-      } else {
-        setErr(t("Revisa tu email para confirmar","Check your email to confirm"));
-      }
-    } catch(e) { setErr(t("Error de conexion","Connection error")); }
+      const res = await fetch(SB_URL+"/auth/v1/signup", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","apikey":SB_KEY},
+        body:JSON.stringify({email:email.trim(),password:pass.trim()})
+      });
+      const d = await res.json();
+      if(d.error){ setErr(d.error_description||d.error); setLoading(false); return; }
+      if(d.access_token){ setAuthData(d); setMode("profile"); }
+      else setErr(t("Revisa tu email para confirmar","Check your email to confirm"));
+    } catch(e){ setErr("Error: "+e.message); }
     setLoading(false);
   };
 
-  const handleProfile = async () => {
+  const doProfile = async () => {
     if(!name.trim()||!flag||!authData) return;
     setLoading(true); setErr("");
     try {
-      const flagVal = typeof flag === "string" ? flag : (flag?.flag || "🌍");
-      const username = name.trim().toLowerCase().replace(/ +/g,"_") + "_" + Date.now().toString().slice(-4);
-      const profileData = { user_id: authData.user.id, name: name.trim(), flag: flagVal, username };
-      const res = await fetch(SB_URL + "/rest/v1/profiles", {
+      const flagStr = typeof flag === "string" ? flag : "🌍";
+      const username = name.trim().toLowerCase().replace(/ +/g,"_")+"_"+Date.now().toString().slice(-4);
+      const body = {user_id:authData.user.id, name:name.trim(), flag:flagStr, username};
+      const res = await fetch(SB_URL+"/rest/v1/profiles", {
         method:"POST",
-        headers:{
-          "Content-Type":"application/json",
-          "apikey": SB_KEY,
-          "Authorization":"Bearer "+authData.access_token,
-          "Prefer":"return=minimal"
-        },
-        body: JSON.stringify(profileData)
+        headers:{"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+authData.access_token,"Prefer":"return=minimal"},
+        body:JSON.stringify(body)
       });
-      if(!res.ok) {
-        const errData = await res.json().catch(()=>({}));
-        // If duplicate username, try with different suffix
-        if(errData.code === "23505") {
-          profileData.username = name.trim().toLowerCase().replace(/ +/g,"_") + "_" + Math.random().toString(36).slice(2,6);
-          await fetch(SB_URL + "/rest/v1/profiles", {
-            method:"POST",
-            headers:{"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+authData.access_token,"Prefer":"return=minimal"},
-            body: JSON.stringify(profileData)
-          });
-        } else {
-          setErr("Error: " + (errData.message || errData.hint || JSON.stringify(errData)));
-          setLoading(false);
-          return;
-        }
+      if(!res.ok && res.status!==201) {
+        const e2 = await res.json().catch(()=>({}));
+        if(e2.code==="23505") body.username = username+"x";
+        else { setErr(t("Error guardando perfil","Error saving profile")+": "+(e2.message||res.status)); setLoading(false); return; }
       }
-      const u = {...profileData, token: authData.access_token, supabaseId: authData.user.id, id: authData.user.id};
-      try{localStorage.setItem("wc26_user", JSON.stringify(u));}catch(e){}
+      const u = {...body, token:authData.access_token, id:authData.user.id};
+      try{localStorage.setItem("wc26_user",JSON.stringify(u));}catch(e){}
       onDone(u);
-    } catch(e) { setErr(t("Error guardando perfil: ","Error saving profile: ") + e.message); }
+    } catch(e){ setErr("Error: "+e.message); }
     setLoading(false);
   };
 
-  const guestMode = () => {
-    const u = {id:"guest_"+Date.now(), name:t("Invitado","Guest"), flag:"🌍", username:"guest", isGuest:true};
-    // Don't save guest to localStorage so next visit shows login
-    onDone(u);
-  };
+  const doGuest = () => onDone({id:"g"+Date.now(),name:t("Invitado","Guest"),flag:"🌍",username:"guest",isGuest:true});
 
   return (
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#060b16,#0d1b3e)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"18px 14px 40px",overflowY:"auto"}}>
@@ -366,62 +329,50 @@ function Onboarding({t, onDone}) {
 
       <div style={{width:"100%",maxWidth:400,background:C.bgCard,borderRadius:20,padding:20,border:`1px solid ${C.grayDark}`}}>
 
-        {mode !== "profile" && (
+        {mode!=="profile" ? (
           <>
-            {/* Tab selector */}
             <div style={{display:"flex",gap:6,marginBottom:18,background:C.grayDark,borderRadius:12,padding:4}}>
               {[["login",t("Iniciar sesion","Sign in")],["register",t("Registrarse","Sign up")]].map(([m,l])=>(
-                <button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,padding:"8px",borderRadius:9,border:"none",background:mode===m?C.bgCard:"transparent",color:mode===m?C.gold:C.gray,fontSize:13,fontWeight:mode===m?700:400,cursor:"pointer",transition:"all 0.2s"}}>
+                <button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,padding:"8px",borderRadius:9,border:"none",background:mode===m?C.bgCard:"transparent",color:mode===m?C.gold:C.gray,fontSize:13,fontWeight:mode===m?700:400,cursor:"pointer"}}>
                   {l}
                 </button>
               ))}
             </div>
-
-            <div style={{fontSize:11,color:C.gray,marginBottom:6}}>Email</div>
+            <div style={{fontSize:11,color:C.gray,marginBottom:5}}>Email</div>
             <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="tu@email.com"
               style={{width:"100%",background:C.grayDark,border:`1px solid ${email?C.goldBorder:"rgba(255,255,255,0.1)"}`,borderRadius:10,padding:"10px 13px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:10}} />
-
-            <div style={{fontSize:11,color:C.gray,marginBottom:6}}>{t("Contrasena","Password")}</div>
+            <div style={{fontSize:11,color:C.gray,marginBottom:5}}>{t("Contrasena","Password")}</div>
             <input value={pass} onChange={e=>setPass(e.target.value)} type="password" placeholder={mode==="register"?t("Min 6 caracteres","Min 6 chars"):"••••••••"}
+              onKeyDown={e=>e.key==="Enter"&&(mode==="login"?doLogin():doRegister())}
               style={{width:"100%",background:C.grayDark,border:`1px solid ${pass?C.goldBorder:"rgba(255,255,255,0.1)"}`,borderRadius:10,padding:"10px 13px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:14}} />
-
-            {err && <div style={{background:"rgba(230,57,70,0.15)",border:"1px solid rgba(230,57,70,0.3)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#FF6B7A",marginBottom:12}}>{err}</div>}
-
-            <button onClick={mode==="login"?handleLogin:handleRegister} disabled={loading||!email.trim()||!pass.trim()}
+            {err&&<div style={{background:"rgba(230,57,70,0.15)",border:"1px solid rgba(230,57,70,0.3)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#FF6B7A",marginBottom:12}}>{err}</div>}
+            <button onClick={mode==="login"?doLogin:doRegister} disabled={loading||!email.trim()||!pass.trim()}
               style={{width:"100%",padding:12,background:email&&pass?`linear-gradient(135deg,${C.gold},#FFA500)`:C.grayDark,border:"none",borderRadius:12,color:email&&pass?"#000":C.gray,fontSize:14,fontWeight:900,cursor:email&&pass?"pointer":"default",marginBottom:10}}>
-              {loading?"⏳ ...":mode==="login"?t("Entrar","Sign in"):t("Crear cuenta","Create account")}
+              {loading?"⏳...":mode==="login"?t("Entrar","Sign in"):t("Crear cuenta","Create account")}
             </button>
-
-            <div style={{textAlign:"center",marginBottom:10}}>
+            <div style={{textAlign:"center"}}>
               <div style={{fontSize:10,color:C.gray,marginBottom:8}}>— {t("o continua sin cuenta","or continue without account")} —</div>
-              <button onClick={guestMode} style={{background:"transparent",border:`1px solid ${C.grayDark}`,borderRadius:10,padding:"8px 20px",color:C.gray,fontSize:12,cursor:"pointer"}}>
+              <button onClick={doGuest} style={{background:"transparent",border:`1px solid ${C.grayDark}`,borderRadius:10,padding:"8px 20px",color:C.gray,fontSize:12,cursor:"pointer"}}>
                 👤 {t("Modo invitado","Guest mode")}
               </button>
             </div>
           </>
-        )}
-
-        {mode === "profile" && (
+        ):(
           <>
             <div style={{textAlign:"center",marginBottom:16}}>
               <div style={{fontSize:28,marginBottom:6}}>👤</div>
               <div style={{fontSize:16,fontWeight:800,color:C.white}}>{t("Crea tu perfil","Create your profile")}</div>
-              <div style={{fontSize:11,color:C.green,marginTop:2}}>✓ {t("Cuenta creada con exito","Account created!")}</div>
+              <div style={{fontSize:11,color:C.green,marginTop:2}}>✓ {t("Cuenta creada","Account created!")}</div>
             </div>
-
             <div style={{fontSize:11,color:C.gold,fontWeight:700,marginBottom:6}}>1 {t("Como te llamas?","Your name?")}</div>
             <input value={name} onChange={e=>setName(e.target.value)} placeholder={t("Tu nombre o apodo...","Your name or nickname...")}
               style={{width:"100%",background:C.grayDark,border:`1px solid ${name.trim()?C.goldBorder:"rgba(255,255,255,0.1)"}`,borderRadius:10,padding:"10px 13px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:14}} />
-
             <div style={{fontSize:11,color:C.gold,fontWeight:700,marginBottom:8}}>2 {t("A que seleccion le vas?","Your team?")}</div>
             {flag&&(
               <div style={{display:"flex",alignItems:"center",gap:10,background:C.goldDim,borderRadius:10,padding:"8px 12px",marginBottom:10,border:`1px solid ${C.goldBorder}`}}>
                 <span style={{fontSize:28}}>{flag}</span>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:13,fontWeight:800,color:C.white}}>{TEAMS.find(x=>x.flag===flag)?.name}</div>
-                  <div style={{fontSize:10,color:C.green}}>OK</div>
-                </div>
-                <button onClick={()=>setFlag("")} style={{background:"none",border:"none",color:C.gray,cursor:"pointer"}}>X</button>
+                <div style={{flex:1}}><div style={{fontSize:13,fontWeight:800,color:C.white}}>{TEAMS.find(x=>x.flag===flag)?.name}</div><div style={{fontSize:10,color:C.green}}>OK</div></div>
+                <button onClick={()=>setFlag("")} style={{background:"none",border:"none",color:C.gray,cursor:"pointer",fontSize:16}}>✕</button>
               </div>
             )}
             <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t("Buscar seleccion...","Search team...")}
@@ -435,12 +386,10 @@ function Onboarding({t, onDone}) {
                 </button>
               ))}
             </div>
-
             {err&&<div style={{background:"rgba(230,57,70,0.15)",border:"1px solid rgba(230,57,70,0.3)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#FF6B7A",marginBottom:10}}>{err}</div>}
-
-            <button onClick={handleProfile} disabled={loading||!name.trim()||!flag}
+            <button onClick={doProfile} disabled={loading||!name.trim()||!flag}
               style={{width:"100%",padding:12,background:name.trim()&&flag?`linear-gradient(135deg,${C.gold},#FFA500)`:C.grayDark,border:"none",borderRadius:12,color:name.trim()&&flag?"#000":C.gray,fontSize:14,fontWeight:900,cursor:name.trim()&&flag?"pointer":"default"}}>
-              {loading?"⏳ ...":flag?`${flag} ${t("Guardar y entrar","Save and enter")} 🚀`:t("Elige tu seleccion","Choose your team")}
+              {loading?"⏳...":flag?`${flag} ${t("Guardar y entrar","Save and enter")} 🚀`:t("Elige tu seleccion","Choose your team")}
             </button>
           </>
         )}
@@ -448,6 +397,7 @@ function Onboarding({t, onDone}) {
     </div>
   );
 }
+
 
 function HomeTab({t, matches, preds, onPred, rooms, user}) {
   const total = Object.keys(preds).length;
