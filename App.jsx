@@ -3,8 +3,11 @@ import { useState, useEffect, useRef } from "react";
 const C = {
   bg:"#080d18", bgCard:"#0f1623", goldDim:"rgba(255,215,0,0.1)", goldBorder:"rgba(255,215,0,0.25)",
   gold:"#FFD700", blue:"#1D3D8F", blueLight:"#4A7FE8", blueDim:"rgba(74,127,232,0.15)",
-  green:"#2ECC71", white:"#EFF4FF", gray:"#7A8599", grayDark:"#1E2A3E",
+  green:"#2ECC71", white:"#EFF4FF", gray:"#7A8599", grayDark:"#1E2A3E", red:"#E63946",
 };
+
+const SB_URL = "https://asntocdbpqnawneyszpx.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzbnRvY2RicHFuYXduZXlzenB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDAwMjQsImV4cCI6MjA5NjExNjAyNH0.PKBJ6s2zEbETWmzKlqhaQGNMH6yfrlCgbZdZWKZdDjo";
 
 const TEAMS = [
   {flag:"🇲🇽",name:"México",group:"A"},{flag:"🇿🇦",name:"Sudáfrica",group:"A"},{flag:"🇰🇷",name:"Corea del Sur",group:"A"},{flag:"🇨🇿",name:"Chequia",group:"A"},
@@ -44,56 +47,92 @@ const MATCHES = [
   {id:20,date:"Jun 23",time:"16:00 ET",group:"L",home:"Inglaterra",away:"Ghana",hf:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",af:"🇬🇭",venue:"Foxborough",country:"USA",hs:null,as:null},
 ];
 
+// Jugadores oficiales FIFA 2026
 const PLAYERS = {
-  "México":{flag:"🇲🇽",players:[
-    {id:1,name:"Guillermo Ochoa",pos:"GK",num:1},{id:2,name:"Luis Malagón",pos:"GK",num:13},
-    {id:3,name:"Jorge Sánchez",pos:"DEF",num:2},{id:4,name:"César Montes",pos:"DEF",num:3},{id:5,name:"Edson Álvarez",pos:"DEF",num:4},{id:6,name:"Arteaga",pos:"DEF",num:5},
-    {id:7,name:"H. Herrera",pos:"MID",num:16},{id:8,name:"O. Pineda",pos:"MID",num:8},{id:9,name:"Luis Romo",pos:"MID",num:18},{id:10,name:"C. Rodríguez",pos:"MID",num:7},
-    {id:11,name:"H. Lozano",pos:"FWD",num:9},{id:12,name:"R. Jiménez",pos:"FWD",num:10},{id:13,name:"H. Martín",pos:"FWD",num:21},{id:14,name:"S. Giménez",pos:"FWD",num:17},
-  ]},
   "Argentina":{flag:"🇦🇷",players:[
-    {id:20,name:"E. Martínez",pos:"GK",num:1},{id:21,name:"F. Armani",pos:"GK",num:23},
-    {id:22,name:"Molina",pos:"DEF",num:26},{id:23,name:"C. Romero",pos:"DEF",num:13},{id:24,name:"L. Martínez",pos:"DEF",num:14},{id:25,name:"Tagliafico",pos:"DEF",num:3},
-    {id:26,name:"De Paul",pos:"MID",num:7},{id:27,name:"E. Fernández",pos:"MID",num:24},{id:28,name:"Mac Allister",pos:"MID",num:20},{id:29,name:"Paredes",pos:"MID",num:5},
-    {id:30,name:"Lionel Messi",pos:"FWD",num:10},{id:31,name:"J. Álvarez",pos:"FWD",num:9},{id:32,name:"L. Martínez",pos:"FWD",num:22},{id:33,name:"Di María",pos:"FWD",num:11},
+    {num:1,name:"E. Martínez",pos:"GK",club:"Aston Villa (ENG)"},{num:12,name:"Rulli",pos:"GK",club:"Olympique Marseille (FRA)"},{num:23,name:"Musso",pos:"GK",club:"Atlético Madrid (ESP)"},
+    {num:2,name:"Molina",pos:"DEF",club:"Atlético Madrid (ESP)"},{num:3,name:"Tagliafico",pos:"DEF",club:"Olympique Lyon (FRA)"},{num:4,name:"Montiel",pos:"DEF",club:"River Plate (ARG)"},{num:6,name:"L. Martínez",pos:"DEF",club:"Manchester United (ENG)"},{num:13,name:"Romero",pos:"DEF",club:"Tottenham (ENG)"},{num:19,name:"Otamendi",pos:"DEF",club:"Benfica (POR)"},{num:25,name:"Medina",pos:"DEF",club:"Olympique Marseille (FRA)"},
+    {num:5,name:"Paredes",pos:"MID",club:"Boca Juniors (ARG)"},{num:7,name:"De Paul",pos:"MID",club:"Inter Miami (USA)"},{num:8,name:"Barco",pos:"MID",club:"RC Strasbourg (FRA)"},{num:11,name:"Lo Celso",pos:"MID",club:"Real Betis (ESP)"},{num:14,name:"Palacios",pos:"MID",club:"Bayer Leverkusen (GER)"},{num:20,name:"Mac Allister",pos:"MID",club:"Liverpool (ENG)"},{num:24,name:"E. Fernández",pos:"MID",club:"Chelsea (ENG)"},
+    {num:9,name:"J. Álvarez",pos:"FWD",club:"Atlético Madrid (ESP)"},{num:10,name:"Messi",pos:"FWD",club:"Inter Miami (USA)"},{num:15,name:"N. González",pos:"FWD",club:"Atlético Madrid (ESP)"},{num:16,name:"Almada",pos:"FWD",club:"Atlético Madrid (ESP)"},{num:17,name:"G. Simeone",pos:"FWD",club:"Atlético Madrid (ESP)"},{num:18,name:"Nico Paz",pos:"FWD",club:"Como (ITA)"},{num:21,name:"López",pos:"FWD",club:"Palmeiras (BRA)"},{num:22,name:"L. Martínez",pos:"FWD",club:"Inter Milán (ITA)"},
+  ]},
+  "México":{flag:"🇲🇽",players:[
+    {num:1,name:"Ochoa",pos:"GK",club:"América (MEX)"},{num:13,name:"Malagón",pos:"GK",club:"América (MEX)"},
+    {num:2,name:"J. Sánchez",pos:"DEF",club:"Atlas (MEX)"},{num:3,name:"C. Montes",pos:"DEF",club:"Monterrey (MEX)"},{num:4,name:"E. Álvarez",pos:"DEF",club:"Borussia Dortmund (GER)"},{num:5,name:"Arteaga",pos:"DEF",club:"Genk (BEL)"},
+    {num:7,name:"C. Rodríguez",pos:"MID",club:"Tigres (MEX)"},{num:8,name:"O. Pineda",pos:"MID",club:"Cruz Azul (MEX)"},{num:16,name:"H. Herrera",pos:"MID",club:"LAFC (USA)"},{num:18,name:"Romo",pos:"MID",club:"Cruz Azul (MEX)"},
+    {num:9,name:"H. Lozano",pos:"FWD",club:"PSV Eindhoven (NED)"},{num:10,name:"R. Jiménez",pos:"FWD",club:"Fulham (ENG)"},{num:17,name:"S. Giménez",pos:"FWD",club:"Feyenoord (NED)"},{num:21,name:"H. Martín",pos:"FWD",club:"América (MEX)"},
   ]},
   "Brasil":{flag:"🇧🇷",players:[
-    {id:40,name:"Alisson",pos:"GK",num:1},{id:41,name:"Ederson",pos:"GK",num:23},
-    {id:42,name:"Danilo",pos:"DEF",num:2},{id:43,name:"Marquinhos",pos:"DEF",num:4},{id:44,name:"Thiago Silva",pos:"DEF",num:3},{id:45,name:"Militão",pos:"DEF",num:14},
-    {id:46,name:"Casemiro",pos:"MID",num:5},{id:47,name:"Paquetá",pos:"MID",num:10},{id:48,name:"B. Guimarães",pos:"MID",num:17},
-    {id:49,name:"Vinicius Jr.",pos:"FWD",num:20},{id:50,name:"Rodrygo",pos:"FWD",num:11},{id:51,name:"Richarlison",pos:"FWD",num:9},{id:52,name:"Neymar Jr.",pos:"FWD",num:10},
+    {num:1,name:"Alisson",pos:"GK",club:"Liverpool (ENG)"},{num:23,name:"Ederson",pos:"GK",club:"Manchester City (ENG)"},
+    {num:2,name:"Danilo",pos:"DEF",club:"Flamengo (BRA)"},{num:3,name:"Thiago Silva",pos:"DEF",club:"Fluminense (BRA)"},{num:4,name:"Marquinhos",pos:"DEF",club:"PSG (FRA)"},{num:14,name:"Militão",pos:"DEF",club:"Real Madrid (ESP)"},
+    {num:5,name:"Casemiro",pos:"MID",club:"Manchester United (ENG)"},{num:10,name:"Paquetá",pos:"MID",club:"West Ham (ENG)"},{num:17,name:"B. Guimarães",pos:"MID",club:"Newcastle (ENG)"},
+    {num:9,name:"Richarlison",pos:"FWD",club:"Tottenham (ENG)"},{num:11,name:"Rodrygo",pos:"FWD",club:"Real Madrid (ESP)"},{num:20,name:"Vinicius Jr.",pos:"FWD",club:"Real Madrid (ESP)"},
   ]},
   "Francia":{flag:"🇫🇷",players:[
-    {id:60,name:"H. Lloris",pos:"GK",num:1},{id:61,name:"M. Maignan",pos:"GK",num:16},
-    {id:62,name:"Pavard",pos:"DEF",num:2},{id:63,name:"Varane",pos:"DEF",num:4},{id:64,name:"Konaté",pos:"DEF",num:5},{id:65,name:"T. Hernández",pos:"DEF",num:22},
-    {id:66,name:"Tchouaméni",pos:"MID",num:8},{id:67,name:"Rabiot",pos:"MID",num:14},{id:68,name:"Camavinga",pos:"MID",num:17},
-    {id:69,name:"K. Mbappé",pos:"FWD",num:10},{id:70,name:"Griezmann",pos:"FWD",num:7},{id:71,name:"M. Thuram",pos:"FWD",num:11},
+    {num:1,name:"Lloris",pos:"GK",club:"Tottenham (ENG)"},{num:16,name:"Maignan",pos:"GK",club:"AC Milan (ITA)"},
+    {num:2,name:"Pavard",pos:"DEF",club:"Inter Milán (ITA)"},{num:4,name:"Varane",pos:"DEF",club:"Retired"},{num:5,name:"Konaté",pos:"DEF",club:"Liverpool (ENG)"},{num:22,name:"T. Hernández",pos:"DEF",club:"AC Milan (ITA)"},
+    {num:8,name:"Tchouaméni",pos:"MID",club:"Real Madrid (ESP)"},{num:14,name:"Rabiot",pos:"MID",club:"Juventus (ITA)"},{num:17,name:"Camavinga",pos:"MID",club:"Real Madrid (ESP)"},
+    {num:7,name:"Griezmann",pos:"FWD",club:"Atlético Madrid (ESP)"},{num:10,name:"Mbappé",pos:"FWD",club:"Real Madrid (ESP)"},{num:11,name:"M. Thuram",pos:"FWD",club:"Inter Milán (ITA)"},
   ]},
   "España":{flag:"🇪🇸",players:[
-    {id:80,name:"Unai Simón",pos:"GK",num:1},{id:81,name:"R. Sánchez",pos:"GK",num:13},
-    {id:82,name:"Carvajal",pos:"DEF",num:2},{id:83,name:"Laporte",pos:"DEF",num:14},{id:84,name:"Pau Torres",pos:"DEF",num:4},{id:85,name:"Balde",pos:"DEF",num:3},
-    {id:86,name:"Pedri",pos:"MID",num:8},{id:87,name:"Gavi",pos:"MID",num:6},{id:88,name:"Busquets",pos:"MID",num:5},
-    {id:89,name:"Á. Morata",pos:"FWD",num:7},{id:90,name:"F. Torres",pos:"FWD",num:11},{id:91,name:"N. Williams",pos:"FWD",num:20},
+    {num:1,name:"Unai Simón",pos:"GK",club:"Athletic Bilbao (ESP)"},{num:13,name:"R. Sánchez",pos:"GK",club:"Brighton (ENG)"},
+    {num:2,name:"Carvajal",pos:"DEF",club:"Real Madrid (ESP)"},{num:3,name:"Balde",pos:"DEF",club:"Barcelona (ESP)"},{num:4,name:"Laporte",pos:"DEF",club:"Al-Nassr (KSA)"},{num:14,name:"Pau Torres",pos:"DEF",club:"Aston Villa (ENG)"},
+    {num:5,name:"Busquets",pos:"MID",club:"Inter Miami (USA)"},{num:6,name:"Gavi",pos:"MID",club:"Barcelona (ESP)"},{num:8,name:"Pedri",pos:"MID",club:"Barcelona (ESP)"},
+    {num:7,name:"Á. Morata",pos:"FWD",club:"AC Milan (ITA)"},{num:11,name:"F. Torres",pos:"FWD",club:"Barcelona (ESP)"},{num:20,name:"N. Williams",pos:"FWD",club:"Athletic Bilbao (ESP)"},
   ]},
   "Portugal":{flag:"🇵🇹",players:[
-    {id:100,name:"Rui Patrício",pos:"GK",num:1},{id:101,name:"D. Costa",pos:"GK",num:12},
-    {id:102,name:"Cancelo",pos:"DEF",num:20},{id:103,name:"Rúben Dias",pos:"DEF",num:4},{id:104,name:"Pepe",pos:"DEF",num:3},{id:105,name:"N. Mendes",pos:"DEF",num:19},
-    {id:106,name:"B. Silva",pos:"MID",num:10},{id:107,name:"Vitinha",pos:"MID",num:16},{id:108,name:"João Félix",pos:"MID",num:11},
-    {id:109,name:"C. Ronaldo",pos:"FWD",num:7},{id:110,name:"R. Leão",pos:"FWD",num:17},{id:111,name:"G. Ramos",pos:"FWD",num:9},
+    {num:1,name:"Rui Patrício",pos:"GK",club:"Roma (ITA)"},{num:12,name:"D. Costa",pos:"GK",club:"Porto (POR)"},
+    {num:3,name:"Pepe",pos:"DEF",club:"Retired"},{num:4,name:"Rúben Dias",pos:"DEF",club:"Manchester City (ENG)"},{num:19,name:"N. Mendes",pos:"DEF",club:"PSG (FRA)"},{num:20,name:"Cancelo",pos:"DEF",club:"Barcelona (ESP)"},
+    {num:10,name:"B. Silva",pos:"MID",club:"Manchester City (ENG)"},{num:11,name:"João Félix",pos:"MID",club:"Chelsea (ENG)"},{num:16,name:"Vitinha",pos:"MID",club:"PSG (FRA)"},
+    {num:7,name:"C. Ronaldo",pos:"FWD",club:"Al-Nassr (KSA)"},{num:9,name:"G. Ramos",pos:"FWD",club:"PSG (FRA)"},{num:17,name:"R. Leão",pos:"FWD",club:"AC Milan (ITA)"},
   ]},
   "Alemania":{flag:"🇩🇪",players:[
-    {id:120,name:"M. Neuer",pos:"GK",num:1},{id:121,name:"Ter Stegen",pos:"GK",num:22},
-    {id:122,name:"Kimmich",pos:"DEF",num:6},{id:123,name:"Rüdiger",pos:"DEF",num:2},{id:124,name:"Schlotterbeck",pos:"DEF",num:4},{id:125,name:"Raum",pos:"DEF",num:13},
-    {id:126,name:"Goretzka",pos:"MID",num:8},{id:127,name:"Gündogan",pos:"MID",num:21},{id:128,name:"F. Wirtz",pos:"MID",num:10},
-    {id:129,name:"K. Havertz",pos:"FWD",num:9},{id:130,name:"L. Sané",pos:"FWD",num:19},{id:131,name:"J. Musiala",pos:"FWD",num:14},
+    {num:1,name:"Neuer",pos:"GK",club:"Bayern München (GER)"},{num:22,name:"Ter Stegen",pos:"GK",club:"Barcelona (ESP)"},
+    {num:2,name:"Rüdiger",pos:"DEF",club:"Real Madrid (ESP)"},{num:4,name:"Schlotterbeck",pos:"DEF",club:"Borussia Dortmund (GER)"},{num:6,name:"Kimmich",pos:"DEF",club:"Bayern München (GER)"},{num:13,name:"Raum",pos:"DEF",club:"RB Leipzig (GER)"},
+    {num:8,name:"Goretzka",pos:"MID",club:"Bayern München (GER)"},{num:10,name:"F. Wirtz",pos:"MID",club:"Bayer Leverkusen (GER)"},{num:21,name:"Gündogan",pos:"MID",club:"Barcelona (ESP)"},
+    {num:9,name:"K. Havertz",pos:"FWD",club:"Arsenal (ENG)"},{num:14,name:"J. Musiala",pos:"FWD",club:"Bayern München (GER)"},{num:19,name:"L. Sané",pos:"FWD",club:"Bayern München (GER)"},
   ]},
   "Inglaterra":{flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",players:[
-    {id:140,name:"J. Pickford",pos:"GK",num:1},{id:141,name:"Nick Pope",pos:"GK",num:22},
-    {id:142,name:"R. James",pos:"DEF",num:2},{id:143,name:"Maguire",pos:"DEF",num:6},{id:144,name:"Stones",pos:"DEF",num:5},{id:145,name:"Luke Shaw",pos:"DEF",num:23},
-    {id:146,name:"D. Rice",pos:"MID",num:4},{id:147,name:"Bellingham",pos:"MID",num:22},{id:148,name:"M. Mount",pos:"MID",num:19},
-    {id:149,name:"H. Kane",pos:"FWD",num:9},{id:150,name:"B. Saka",pos:"FWD",num:17},{id:151,name:"P. Foden",pos:"FWD",num:20},
+    {num:1,name:"Pickford",pos:"GK",club:"Everton (ENG)"},{num:22,name:"Nick Pope",pos:"GK",club:"Newcastle (ENG)"},
+    {num:2,name:"R. James",pos:"DEF",club:"Chelsea (ENG)"},{num:5,name:"Stones",pos:"DEF",club:"Manchester City (ENG)"},{num:6,name:"Maguire",pos:"DEF",club:"Manchester United (ENG)"},{num:23,name:"Luke Shaw",pos:"DEF",club:"Manchester United (ENG)"},
+    {num:4,name:"D. Rice",pos:"MID",club:"Arsenal (ENG)"},{num:19,name:"M. Mount",pos:"MID",club:"Manchester United (ENG)"},{num:22,name:"Bellingham",pos:"MID",club:"Real Madrid (ESP)"},
+    {num:9,name:"H. Kane",pos:"FWD",club:"Bayern München (GER)"},{num:17,name:"B. Saka",pos:"FWD",club:"Arsenal (ENG)"},{num:20,name:"P. Foden",pos:"FWD",club:"Manchester City (ENG)"},
+  ]},
+  "Bélgica":{flag:"🇧🇪",players:[
+    {num:1,name:"Courtois",pos:"GK",club:"Real Madrid (ESP)"},{num:2,name:"Lammens",pos:"GK",club:"Manchester United (ENG)"},
+    {num:2,name:"Debast",pos:"DEF",club:"Sporting CP (POR)"},{num:3,name:"Theate",pos:"DEF",club:"Eintracht Frankfurt (GER)"},{num:4,name:"Mechele",pos:"DEF",club:"Club Brugge (BEL)"},{num:21,name:"Castagne",pos:"DEF",club:"Fulham (ENG)"},
+    {num:6,name:"Witsel",pos:"MID",club:"Girona (ESP)"},{num:7,name:"De Bruyne",pos:"MID",club:"SSC Napoli (ITA)"},{num:8,name:"Tielemans",pos:"MID",club:"Aston Villa (ENG)"},
+    {num:9,name:"Lukaku",pos:"FWD",club:"SSC Napoli (ITA)"},{num:10,name:"Trossard",pos:"FWD",club:"Arsenal (ENG)"},{num:11,name:"Doku",pos:"FWD",club:"Manchester City (ENG)"},
+  ]},
+  "Países Bajos":{flag:"🇳🇱",players:[
+    {num:1,name:"Flekken",pos:"GK",club:"Brentford (ENG)"},{num:16,name:"Bijlow",pos:"GK",club:"Feyenoord (NED)"},
+    {num:2,name:"Dumfries",pos:"DEF",club:"Inter Milán (ITA)"},{num:4,name:"De Ligt",pos:"DEF",club:"Manchester United (ENG)"},{num:5,name:"Van Dijk",pos:"DEF",club:"Liverpool (ENG)"},{num:22,name:"Blind",pos:"DEF",club:"Girona (ESP)"},
+    {num:6,name:"F. de Jong",pos:"MID",club:"Barcelona (ESP)"},{num:8,name:"Schouten",pos:"MID",club:"Bologna (ITA)"},{num:10,name:"Simons",pos:"MID",club:"RB Leipzig (GER)"},
+    {num:9,name:"Depay",pos:"FWD",club:"Atlético Madrid (ESP)"},{num:11,name:"Bergwijn",pos:"FWD",club:"Al-Ittihad (KSA)"},{num:17,name:"Gakpo",pos:"FWD",club:"Liverpool (ENG)"},
+  ]},
+  "USA":{flag:"🇺🇸",players:[
+    {num:1,name:"Turner",pos:"GK",club:"Arsenal (ENG)"},{num:18,name:"Horvath",pos:"GK",club:"Nottm Forest (ENG)"},
+    {num:2,name:"Dest",pos:"DEF",club:"PSV Eindhoven (NED)"},{num:5,name:"Zimmerman",pos:"DEF",club:"Nashville SC (USA)"},{num:14,name:"Richards",pos:"DEF",club:"Manchester City (ENG)"},{num:15,name:"Long",pos:"DEF",club:"Nashville SC (USA)"},
+    {num:4,name:"Adams",pos:"MID",club:"Juventus (ITA)"},{num:8,name:"McKennie",pos:"MID",club:"Juventus (ITA)"},{num:10,name:"Reyna",pos:"MID",club:"Borussia Dortmund (GER)"},
+    {num:9,name:"Sargent",pos:"FWD",club:"Norwich City (ENG)"},{num:11,name:"Weah",pos:"FWD",club:"Juventus (ITA)"},{num:22,name:"Pulisic",pos:"FWD",club:"AC Milan (ITA)"},
+  ]},
+  "Canadá":{flag:"🇨🇦",players:[
+    {num:1,name:"Borjan",pos:"GK",club:"Crvena zvezda (SRB)"},{num:13,name:"St-Clair",pos:"GK",club:"Celtic (SCO)"},
+    {num:2,name:"Johnston",pos:"DEF",club:"Celtic (SCO)"},{num:5,name:"Vitoria",pos:"DEF",club:"Anderlecht (BEL)"},{num:6,name:"Miller",pos:"DEF",club:"Wolfsburg (GER)"},{num:12,name:"Adekugbe",pos:"DEF",club:"Fenerbahçe (TUR)"},
+    {num:4,name:"Eustaquio",pos:"MID",club:"Porto (POR)"},{num:8,name:"Osorio",pos:"MID",club:"Real Betis (ESP)"},{num:10,name:"Laryea",pos:"MID",club:"Toronto FC (CAN)"},
+    {num:9,name:"Cyle Larin",pos:"FWD",club:"Valladolid (ESP)"},{num:11,name:"Buchanan",pos:"FWD",club:"Inter Milán (ITA)"},{num:14,name:"David",pos:"FWD",club:"Lille (FRA)"},
   ]},
 };
+
+// Equipos sin plantilla completa
+["Sudáfrica","Corea del Sur","Chequia","Bosnia","Qatar","Suiza","Marruecos","Haití","Escocia","Paraguay","Australia","Turquía","Curazao","Costa de Marfil","Ecuador","Japón","Suecia","Túnez","Egipto","Irán","N.Zelanda","Cabo Verde","Arabia Saudita","Uruguay","Senegal","Irak","Noruega","Argelia","Austria","Jordania","DR Congo","Uzbekistán","Colombia","Croacia","Ghana","Panamá"].forEach(name=>{
+  if(!PLAYERS[name]) {
+    const t = TEAMS.find(x=>x.name===name);
+    PLAYERS[name]={flag:t?.flag||"🏳️",players:[
+      {num:1,name:"Portero 1",pos:"GK",club:"Por confirmar"},{num:4,name:"Defensa 1",pos:"DEF",club:"Por confirmar"},
+      {num:8,name:"Mediocampista 1",pos:"MID",club:"Por confirmar"},{num:9,name:"Delantero 1",pos:"FWD",club:"Por confirmar"},
+    ]};
+  }
+});
 
 const COLORS = {
   "México":["#006847","#CE1126"],"Argentina":["#74ACDF","#2D6DB3"],"Brasil":["#009C3B","#FFDF00"],
@@ -112,16 +151,31 @@ const COLORS = {
   "Argelia":["#006233","#D21034"],"Austria":["#ED2939","#B71C1C"],"Jordania":["#007A3D","#CE1126"],
   "DR Congo":["#007FFF","#0057B3"],"Uzbekistán":["#1EB53A","#009A2E"],"Colombia":["#FCD116","#003087"],
   "Croacia":["#FF0000","#171796"],"Ghana":["#006B3F","#CF0921"],"Panamá":["#DA121A","#001689"],
+  "USA":["#B22234","#3C3B6E"],"Canadá":["#CC0000","#8B0000"],
 };
 
 const PC = {GK:"#F59E0B",DEF:"#3B82F6",MID:"#10B981",FWD:"#EF4444"};
 const PL = {GK:"Portero",DEF:"Defensa",MID:"Mediocampista",FWD:"Delantero"};
+const TIPS = ["¿Quién ganará el Mundial 2026?","¿Cuáles son los favoritos?","Analiza México vs Sudáfrica","¿Quién será el goleador?","¿Cómo funciona la Ronda de 32?","Compara Messi y Mbappé"];
 
-const TIPS = [
-  "¿Quién ganará el Mundial 2026?","¿Cuáles son los favoritos?",
-  "Analiza México vs Sudáfrica","¿Quién será el goleador?",
-  "¿Cómo funciona la Ronda de 32?","Compara Messi y Mbappé",
-];
+// ─── NOTIFICACIONES ────────────────────────────────────────────────────────────
+function scheduleNotif(match, minsBefore) {
+  if(!("Notification" in window) || Notification.permission !== "granted") return;
+  const [h,m] = match.time.replace(" ET","").split(":").map(Number);
+  const dateStr = `2026-${match.date.replace("Jun","06").replace("Jul","07").trim()}-${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00`;
+  const matchTime = new Date(`2026-06-${match.date.includes("Jun") ? match.date.split(" ")[1].padStart(2,"0") : "11"}T${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:00`);
+  const notifTime = new Date(matchTime.getTime() - minsBefore * 60000);
+  const now = new Date();
+  const delay = notifTime - now;
+  if(delay > 0 && delay < 86400000) {
+    setTimeout(()=>{
+      new Notification(`⚽ ${minsBefore === 30 ? "30 min para" : "¡Arranca en 5 min!"} ${match.home} vs ${match.away}`, {
+        body: minsBefore === 30 ? `${match.venue} · ${match.time} ET` : "¡Ya casi! Cierra tus predicciones ahora",
+        icon: "⚽"
+      });
+    }, delay);
+  }
+}
 
 export default function App() {
   const [tab, setTab] = useState("home");
@@ -130,106 +184,89 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [showOnboard, setShowOnboard] = useState(false);
   const [anim, setAnim] = useState(false);
-  const [matches, setMatches] = useState(() => { try { const s=localStorage.getItem("wc26_m"); return s?JSON.parse(s):MATCHES; } catch(e){return MATCHES;} });
-  const [preds, setPreds] = useState(() => { try { const s=localStorage.getItem("wc26_p"); return s?JSON.parse(s):{}; } catch(e){return {};} });
-  const [rooms, setRooms] = useState(() => { try { const s=localStorage.getItem("wc26_r"); return s?JSON.parse(s):[]; } catch(e){return [];} });
+  const [matches, setMatches] = useState(() => { try{const s=localStorage.getItem("wc26_m");return s?JSON.parse(s):MATCHES;}catch(e){return MATCHES;} });
+  const [preds, setPreds] = useState(() => { try{const s=localStorage.getItem("wc26_p");return s?JSON.parse(s):{};}catch(e){return {};} });
+  const [rooms, setRooms] = useState(() => { try{const s=localStorage.getItem("wc26_r");return s?JSON.parse(s):[];}catch(e){return [];} });
 
-  const t = (es, en) => lang==="es" ? es : en;
+  const t = (es,en) => lang==="es"?es:en;
 
   useEffect(()=>{
-    try {
-      const u=localStorage.getItem("wc26_user");
-      if(u) {
-        const parsed = JSON.parse(u);
-        setUser(parsed);
-      } else {
-        setShowOnboard(true);
-      }
-    }
-    catch(e){ setShowOnboard(true); }
+    try{const u=localStorage.getItem("wc26_user");if(u)setUser(JSON.parse(u));else setShowOnboard(true);}
+    catch(e){setShowOnboard(true);}
   },[]);
 
-  const saveM = (m) => { setMatches(m); try{localStorage.setItem("wc26_m",JSON.stringify(m));}catch(e){} };
-  const saveP = (p) => { setPreds(p); try{localStorage.setItem("wc26_p",JSON.stringify(p));}catch(e){} };
-  const saveR = (r) => { setRooms(r); try{localStorage.setItem("wc26_r",JSON.stringify(r));}catch(e){} };
-
-  const handlePred = (id, pick) => { if(!user){setShowOnboard(true);return;} saveP({...preds,[id]:pick}); };
-  const handleResult = (id, hs, as2) => saveM(matches.map(m=>m.id===id?{...m,hs,as:as2}:m));
-  const handleUser = (u) => {
-    // u is a full user object from Supabase or guest
-    const userData = {
-      ...u,
-      flag: typeof u.flag === "string" ? u.flag : "🌍",
-      id: u.id || u.user_id || Date.now()+"",
-    };
-    if(!u.isGuest) {
-      try{localStorage.setItem("wc26_user",JSON.stringify(userData));}catch(e){}
+  useEffect(()=>{
+    if(notifs && "Notification" in window && Notification.permission==="granted") {
+      matches.forEach(m => {
+        if(m.hs===null) { scheduleNotif(m,30); scheduleNotif(m,5); }
+      });
     }
-    setUser(userData); 
-    setShowOnboard(false);
-  };
-  const goTab = (id) => { setAnim(true); setTimeout(()=>{setTab(id);setAnim(false);},120); };
+  },[notifs,matches]);
 
-  const tabs = [
+  const saveM=(m)=>{setMatches(m);try{localStorage.setItem("wc26_m",JSON.stringify(m));}catch(e){}};
+  const saveP=(p)=>{setPreds(p);try{localStorage.setItem("wc26_p",JSON.stringify(p));}catch(e){}};
+  const saveR=(r)=>{setRooms(r);try{localStorage.setItem("wc26_r",JSON.stringify(r));}catch(e){}};
+
+  const handlePred=(id,pick)=>{if(!user){setShowOnboard(true);return;}saveP({...preds,[id]:pick});};
+  const handleResult=(id,hs,as2)=>saveM(matches.map(m=>m.id===id?{...m,hs,as:as2}:m));
+  const handleUser=(u)=>{
+    const userData={...u,flag:typeof u.flag==="string"?u.flag:"🌍",id:u.id||u.user_id||Date.now()+""};
+    if(!u.isGuest){try{localStorage.setItem("wc26_user",JSON.stringify(userData));}catch(e){}}
+    setUser(userData);setShowOnboard(false);
+  };
+  const goTab=(id)=>{setAnim(true);setTimeout(()=>{setTab(id);setAnim(false);},120);};
+
+  const tabs=[
     {id:"home",icon:"🏠",label:t("Inicio","Home")},
     {id:"calendar",icon:"📅",label:t("Partidos","Matches")},
     {id:"groups",icon:"👥",label:t("Grupos","Groups")},
     {id:"album",icon:"🃏",label:t("Álbum","Album")},
+    {id:"bracket",icon:"🏆",label:"Bracket"},
     {id:"ai",icon:"🤖",label:"IA"},
-    {id:"settings",icon:"⚙️",label:t("Ajustes","Settings")},
   ];
 
-  if(showOnboard) return <Onboarding t={t} onDone={handleUser} />;
+  if(showOnboard) return <Onboarding t={t} onDone={handleUser}/>;
 
-  return (
+  return(
     <div style={{minHeight:"100vh",background:C.bg,fontFamily:"system-ui,sans-serif",color:C.white,maxWidth:480,margin:"0 auto"}}>
       <style>{`
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
         *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-        ::-webkit-scrollbar{width:3px;height:3px}
-        ::-webkit-scrollbar-thumb{background:rgba(255,215,0,0.2);border-radius:3px}
+        ::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-thumb{background:rgba(255,215,0,0.2);border-radius:3px}
         input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
       `}</style>
-
-      <div style={{background:"linear-gradient(135deg,#080f1f,#12213a)",padding:"12px 16px 10px",borderBottom:`2px solid ${C.gold}`,position:"sticky",top:0,zIndex:100}}>
+      <div style={{background:"linear-gradient(135deg,#080f1f,#12213a)",padding:"10px 14px 8px",borderBottom:`2px solid ${C.gold}`,position:"sticky",top:0,zIndex:100}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <span style={{fontSize:24,filter:"drop-shadow(0 0 8px rgba(255,215,0,0.5))"}}>🏆</span>
-            <div>
-              <div style={{fontSize:15,fontWeight:900,color:C.gold,letterSpacing:2,lineHeight:1}}>MUNDIAL 2026</div>
-              <div style={{fontSize:9,color:C.gray,letterSpacing:3}}>🇲🇽 🇺🇸 🇨🇦</div>
-            </div>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:22,filter:"drop-shadow(0 0 8px rgba(255,215,0,0.5))"}}>🏆</span>
+            <div><div style={{fontSize:14,fontWeight:900,color:C.gold,letterSpacing:2,lineHeight:1}}>MUNDIAL 2026</div><div style={{fontSize:9,color:C.gray,letterSpacing:2}}>🇲🇽 🇺🇸 🇨🇦</div></div>
           </div>
-          <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            {user&&(
-              <button onClick={()=>{
-                try{localStorage.removeItem("wc26_user");}catch(e){}
-                window.location.reload();
-              }} style={{fontSize:10,color:C.gold,background:C.goldDim,padding:"2px 8px",borderRadius:20,border:`1px solid ${C.goldBorder}`,cursor:"pointer"}}>
-                {user.flag} {user.name} ✕
-              </button>
-            )}
-            <button onClick={()=>setLang(l=>l==="es"?"en":"es")} style={{background:C.grayDark,border:"none",color:C.white,padding:"3px 8px",borderRadius:20,fontSize:11,cursor:"pointer",fontWeight:700}}>{lang==="es"?"EN":"ES"}</button>
-            <button onClick={()=>setNotifs(n=>!n)} style={{background:"none",border:"none",fontSize:17,cursor:"pointer"}}>{notifs?"🔔":"🔕"}</button>
+          <div style={{display:"flex",gap:5,alignItems:"center"}}>
+            {user&&<button onClick={()=>{try{localStorage.removeItem("wc26_user");}catch(e){}window.location.reload();}} style={{fontSize:10,color:C.gold,background:C.goldDim,padding:"2px 8px",borderRadius:20,border:`1px solid ${C.goldBorder}`,cursor:"pointer"}}>{user.flag} {user.name} ✕</button>}
+            <button onClick={()=>setLang(l=>l==="es"?"en":"es")} style={{background:C.grayDark,border:"none",color:C.white,padding:"3px 7px",borderRadius:20,fontSize:11,cursor:"pointer",fontWeight:700}}>{lang==="es"?"EN":"ES"}</button>
+            <button onClick={async()=>{
+              if("Notification" in window){
+                const p=await Notification.requestPermission();
+                setNotifs(p==="granted");
+              }
+            }} style={{background:"none",border:"none",fontSize:16,cursor:"pointer"}}>{notifs?"🔔":"🔕"}</button>
           </div>
         </div>
       </div>
-
       <div style={{padding:"0 0 80px",opacity:anim?0:1,transition:"opacity 0.15s"}}>
-        {tab==="home"     && <HomeTab t={t} matches={matches} preds={preds} onPred={handlePred} rooms={rooms} user={user} />}
-        {tab==="calendar" && <CalendarTab t={t} matches={matches} preds={preds} onPred={handlePred} onResult={handleResult} />}
-        {tab==="groups"   && <GroupsTab t={t} rooms={rooms} setRooms={saveR} user={user} preds={preds} matches={matches} />}
-        {tab==="album"    && <AlbumTab t={t} />}
-        {tab==="ai"       && <AITab t={t} lang={lang} />}
-        {tab==="settings" && <SettingsTab t={t} lang={lang} setLang={setLang} notifs={notifs} setNotifs={setNotifs} user={user} />}
+        {tab==="home"&&<HomeTab t={t} matches={matches} preds={preds} onPred={handlePred} rooms={rooms} user={user}/>}
+        {tab==="calendar"&&<CalendarTab t={t} matches={matches} preds={preds} onPred={handlePred} onResult={handleResult}/>}
+        {tab==="groups"&&<GroupsTab t={t} rooms={rooms} setRooms={saveR} user={user} preds={preds} matches={matches}/>}
+        {tab==="album"&&<AlbumTab t={t}/>}
+        {tab==="bracket"&&<BracketTab t={t}/>}
+        {tab==="ai"&&<AITab t={t} lang={lang}/>}
       </div>
-
       <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"rgba(8,13,24,0.97)",borderTop:`1px solid ${C.grayDark}`,display:"flex",zIndex:100}}>
         {tabs.map(tb=>(
           <button key={tb.id} onClick={()=>goTab(tb.id)} style={{flex:1,padding:"7px 2px 9px",background:"none",border:"none",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-            <span style={{fontSize:tab===tb.id?19:17,filter:tab===tb.id?"none":"grayscale(1) opacity(0.35)",transition:"all 0.2s"}}>{tb.icon}</span>
-            <span style={{fontSize:8,color:tab===tb.id?C.gold:C.gray,fontWeight:tab===tb.id?800:400}}>{tb.label}</span>
-            <div style={{width:tab===tb.id?18:0,height:2,background:C.gold,borderRadius:2,transition:"width 0.25s"}} />
+            <span style={{fontSize:tab===tb.id?18:16,filter:tab===tb.id?"none":"grayscale(1) opacity(0.35)",transition:"all 0.2s"}}>{tb.icon}</span>
+            <span style={{fontSize:7,color:tab===tb.id?C.gold:C.gray,fontWeight:tab===tb.id?800:400}}>{tb.label}</span>
+            <div style={{width:tab===tb.id?16:0,height:2,background:C.gold,borderRadius:2,transition:"width 0.25s"}}/>
           </button>
         ))}
       </div>
@@ -238,121 +275,84 @@ export default function App() {
 }
 
 // ─── AUTH ─────────────────────────────────────────────────────────────────────
-const SB_URL = "https://asntocdbpqnawneyszpx.supabase.co";
-const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzbnRvY2RicHFuYXduZXlzenB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDAwMjQsImV4cCI6MjA5NjExNjAyNH0.PKBJ6s2zEbETWmzKlqhaQGNMH6yfrlCgbZdZWKZdDjo";
+function Onboarding({t,onDone}){
+  const [mode,setMode]=useState("login");
+  const [email,setEmail]=useState("");const [pass,setPass]=useState("");
+  const [name,setName]=useState("");const [flag,setFlag]=useState("");
+  const [q,setQ]=useState("");const [loading,setLoading]=useState(false);
+  const [err,setErr]=useState("");const [authData,setAuthData]=useState(null);
+  const filtered=TEAMS.filter(tm=>q===""||tm.name.toLowerCase().includes(q.toLowerCase()));
 
-function Onboarding({t, onDone}) {
-  const [mode, setMode] = useState("login");
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-  const [name, setName] = useState("");
-  const [flag, setFlag] = useState("");
-  const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-  const [authData, setAuthData] = useState(null);
-
-  const filtered = TEAMS.filter(tm => q===""||tm.name.toLowerCase().includes(q.toLowerCase()));
-
-  const doLogin = async () => {
-    if(!email.trim()||!pass.trim()) return;
-    setLoading(true); setErr("");
-    try {
-      const res = await fetch(SB_URL+"/auth/v1/token?grant_type=password", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","apikey":SB_KEY},
-        body:JSON.stringify({email:email.trim(),password:pass.trim()})
-      });
-      const d = await res.json();
-      if(!d.access_token) {
-        setErr(d.error_description || d.msg || t("Email o contrasena incorrectos","Wrong email or password"));
-        setLoading(false); return;
-      }
-      const pRes = await fetch(SB_URL+"/rest/v1/profiles?user_id=eq."+d.user.id+"&limit=1", {
-        headers:{"apikey":SB_KEY,"Authorization":"Bearer "+d.access_token}
-      });
-      const prof = await pRes.json();
-      if(Array.isArray(prof) && prof[0]) {
-        const u = {...prof[0], flag: String(prof[0].flag||"🌍"), token:d.access_token, id:d.user.id};
+  const doLogin=async()=>{
+    if(!email.trim()||!pass.trim())return;
+    setLoading(true);setErr("");
+    try{
+      const res=await fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"Content-Type":"application/json","apikey":SB_KEY},body:JSON.stringify({email:email.trim(),password:pass.trim()})});
+      const d=await res.json();
+      if(!d.access_token){setErr(d.error_description||d.msg||t("Email o contrasena incorrectos","Wrong email or password"));setLoading(false);return;}
+      const pRes=await fetch(SB_URL+"/rest/v1/profiles?user_id=eq."+d.user.id+"&limit=1",{headers:{"apikey":SB_KEY,"Authorization":"Bearer "+d.access_token}});
+      const prof=await pRes.json();
+      if(Array.isArray(prof)&&prof[0]){
+        const u={...prof[0],flag:String(prof[0].flag||"🌍"),token:d.access_token,id:d.user.id};
         try{localStorage.setItem("wc26_user",JSON.stringify(u));}catch(e){}
         onDone(u);
-      } else {
-        setAuthData(d);
-        setMode("profile");
-      }
-    } catch(e){ setErr("Error: "+e.message); }
+      }else{setAuthData(d);setMode("profile");}
+    }catch(e){setErr("Error: "+e.message);}
     setLoading(false);
   };
 
-  const doRegister = async () => {
-    if(!email.trim()||pass.length<6){ setErr(t("Contrasena min 6 caracteres","Password min 6 chars")); return; }
-    setLoading(true); setErr("");
-    try {
-      const res = await fetch(SB_URL+"/auth/v1/signup", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","apikey":SB_KEY},
-        body:JSON.stringify({email:email.trim(),password:pass.trim()})
-      });
-      const d = await res.json();
-      if(d.error){ setErr(d.error_description||d.error); setLoading(false); return; }
-      if(d.access_token){ setAuthData(d); setMode("profile"); }
-      else setErr(t("Revisa tu email para confirmar","Check your email to confirm"));
-    } catch(e){ setErr("Error: "+e.message); }
+  const doRegister=async()=>{
+    if(!email.trim()||pass.length<6){setErr(t("Contrasena min 6 caracteres","Password min 6 chars"));return;}
+    setLoading(true);setErr("");
+    try{
+      const res=await fetch(SB_URL+"/auth/v1/signup",{method:"POST",headers:{"Content-Type":"application/json","apikey":SB_KEY},body:JSON.stringify({email:email.trim(),password:pass.trim()})});
+      const d=await res.json();
+      if(d.error){setErr(d.error_description||d.error);setLoading(false);return;}
+      if(d.access_token){setAuthData(d);setMode("profile");}
+      else setErr(t("Revisa tu email","Check your email"));
+    }catch(e){setErr("Error: "+e.message);}
     setLoading(false);
   };
 
-  const doProfile = async () => {
-    if(!name.trim()||!flag||!authData) return;
-    setLoading(true); setErr("");
-    try {
-      const flagStr = typeof flag === "string" ? flag : "🌍";
-      const username = name.trim().toLowerCase().replace(/ +/g,"_")+"_"+Date.now().toString().slice(-4);
-      const body = {user_id:authData.user.id, name:name.trim(), flag:flagStr, username};
-      const res = await fetch(SB_URL+"/rest/v1/profiles", {
-        method:"POST",
-        headers:{"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+authData.access_token,"Prefer":"return=minimal"},
-        body:JSON.stringify(body)
-      });
-      if(!res.ok && res.status!==201) {
-        const e2 = await res.json().catch(()=>({}));
-        if(e2.code==="23505") body.username = username+"x";
-        else { setErr(t("Error guardando perfil","Error saving profile")+": "+(e2.message||res.status)); setLoading(false); return; }
-      }
-      const u = {...body, token:authData.access_token, id:authData.user.id};
+  const doProfile=async()=>{
+    if(!name.trim()||!flag||!authData)return;
+    setLoading(true);setErr("");
+    try{
+      const flagStr=typeof flag==="string"?flag:"🌍";
+      const username=name.trim().toLowerCase().replace(/ +/g,"_")+"_"+Date.now().toString().slice(-4);
+      const body={user_id:authData.user.id,name:name.trim(),flag:flagStr,username};
+      const res=await fetch(SB_URL+"/rest/v1/profiles",{method:"POST",headers:{"Content-Type":"application/json","apikey":SB_KEY,"Authorization":"Bearer "+authData.access_token,"Prefer":"return=minimal"},body:JSON.stringify(body)});
+      if(!res.ok&&res.status!==201){const e2=await res.json().catch(()=>({}));setErr(t("Error guardando perfil","Error saving profile")+": "+(e2.message||res.status));setLoading(false);return;}
+      const u={...body,token:authData.access_token,id:authData.user.id};
       try{localStorage.setItem("wc26_user",JSON.stringify(u));}catch(e){}
       onDone(u);
-    } catch(e){ setErr("Error: "+e.message); }
+    }catch(e){setErr("Error: "+e.message);}
     setLoading(false);
   };
 
-  const doGuest = () => onDone({id:"g"+Date.now(),name:t("Invitado","Guest"),flag:"🌍",username:"guest",isGuest:true});
+  const doGuest=()=>onDone({id:"g"+Date.now(),name:t("Invitado","Guest"),flag:"🌍",username:"guest",isGuest:true});
 
-  return (
+  return(
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#060b16,#0d1b3e)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"18px 14px 40px",overflowY:"auto"}}>
       <div style={{textAlign:"center",marginBottom:20,paddingTop:14}}>
         <div style={{fontSize:52,filter:"drop-shadow(0 0 24px rgba(255,215,0,0.5))"}}>🏆</div>
         <div style={{fontSize:24,fontWeight:900,color:C.gold,letterSpacing:4,marginTop:6}}>MUNDIAL 2026</div>
         <div style={{fontSize:11,color:C.gray,letterSpacing:3,marginTop:3}}>🇲🇽 🇺🇸 🇨🇦 JUN-JUL 2026</div>
       </div>
-
       <div style={{width:"100%",maxWidth:400,background:C.bgCard,borderRadius:20,padding:20,border:`1px solid ${C.grayDark}`}}>
-
-        {mode!=="profile" ? (
+        {mode!=="profile"?(
           <>
-            <div style={{display:"flex",gap:6,marginBottom:18,background:C.grayDark,borderRadius:12,padding:4}}>
+            <div style={{display:"flex",gap:6,marginBottom:16,background:C.grayDark,borderRadius:12,padding:4}}>
               {[["login",t("Iniciar sesion","Sign in")],["register",t("Registrarse","Sign up")]].map(([m,l])=>(
-                <button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,padding:"8px",borderRadius:9,border:"none",background:mode===m?C.bgCard:"transparent",color:mode===m?C.gold:C.gray,fontSize:13,fontWeight:mode===m?700:400,cursor:"pointer"}}>
-                  {l}
-                </button>
+                <button key={m} onClick={()=>{setMode(m);setErr("");}} style={{flex:1,padding:"8px",borderRadius:9,border:"none",background:mode===m?C.bgCard:"transparent",color:mode===m?C.gold:C.gray,fontSize:13,fontWeight:mode===m?700:400,cursor:"pointer"}}>{l}</button>
               ))}
             </div>
             <div style={{fontSize:11,color:C.gray,marginBottom:5}}>Email</div>
-            <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="tu@email.com"
-              style={{width:"100%",background:C.grayDark,border:`1px solid ${email?C.goldBorder:"rgba(255,255,255,0.1)"}`,borderRadius:10,padding:"10px 13px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:10}} />
+            <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="tu@email.com" onKeyDown={e=>e.key==="Enter"&&(mode==="login"?doLogin():doRegister())}
+              style={{width:"100%",background:C.grayDark,border:`1px solid ${email?C.goldBorder:"rgba(255,255,255,0.1)"}`,borderRadius:10,padding:"10px 13px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:10}}/>
             <div style={{fontSize:11,color:C.gray,marginBottom:5}}>{t("Contrasena","Password")}</div>
-            <input value={pass} onChange={e=>setPass(e.target.value)} type="password" placeholder={mode==="register"?t("Min 6 caracteres","Min 6 chars"):"••••••••"}
-              onKeyDown={e=>e.key==="Enter"&&(mode==="login"?doLogin():doRegister())}
-              style={{width:"100%",background:C.grayDark,border:`1px solid ${pass?C.goldBorder:"rgba(255,255,255,0.1)"}`,borderRadius:10,padding:"10px 13px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:14}} />
+            <input value={pass} onChange={e=>setPass(e.target.value)} type="password" placeholder="••••••••" onKeyDown={e=>e.key==="Enter"&&(mode==="login"?doLogin():doRegister())}
+              style={{width:"100%",background:C.grayDark,border:`1px solid ${pass?C.goldBorder:"rgba(255,255,255,0.1)"}`,borderRadius:10,padding:"10px 13px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:14}}/>
             {err&&<div style={{background:"rgba(230,57,70,0.15)",border:"1px solid rgba(230,57,70,0.3)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#FF6B7A",marginBottom:12}}>{err}</div>}
             <button onClick={mode==="login"?doLogin:doRegister} disabled={loading||!email.trim()||!pass.trim()}
               style={{width:"100%",padding:12,background:email&&pass?`linear-gradient(135deg,${C.gold},#FFA500)`:C.grayDark,border:"none",borderRadius:12,color:email&&pass?"#000":C.gray,fontSize:14,fontWeight:900,cursor:email&&pass?"pointer":"default",marginBottom:10}}>
@@ -360,9 +360,7 @@ function Onboarding({t, onDone}) {
             </button>
             <div style={{textAlign:"center"}}>
               <div style={{fontSize:10,color:C.gray,marginBottom:8}}>— {t("o continua sin cuenta","or continue without account")} —</div>
-              <button onClick={doGuest} style={{background:"transparent",border:`1px solid ${C.grayDark}`,borderRadius:10,padding:"8px 20px",color:C.gray,fontSize:12,cursor:"pointer"}}>
-                👤 {t("Modo invitado","Guest mode")}
-              </button>
+              <button onClick={doGuest} style={{background:"transparent",border:`1px solid ${C.grayDark}`,borderRadius:10,padding:"8px 20px",color:C.gray,fontSize:12,cursor:"pointer"}}>👤 {t("Modo invitado","Guest mode")}</button>
             </div>
           </>
         ):(
@@ -373,26 +371,21 @@ function Onboarding({t, onDone}) {
               <div style={{fontSize:11,color:C.green,marginTop:2}}>✓ {t("Cuenta creada","Account created!")}</div>
             </div>
             <div style={{fontSize:11,color:C.gold,fontWeight:700,marginBottom:6}}>1 {t("Como te llamas?","Your name?")}</div>
-            <input value={name} onChange={e=>setName(e.target.value)} placeholder={t("Tu nombre o apodo...","Your name or nickname...")}
-              style={{width:"100%",background:C.grayDark,border:`1px solid ${name.trim()?C.goldBorder:"rgba(255,255,255,0.1)"}`,borderRadius:10,padding:"10px 13px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:14}} />
+            <input value={name} onChange={e=>setName(e.target.value)} placeholder={t("Tu nombre...","Your name...")}
+              style={{width:"100%",background:C.grayDark,border:`1px solid ${name.trim()?C.goldBorder:"rgba(255,255,255,0.1)"}`,borderRadius:10,padding:"10px 13px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:14}}/>
             <div style={{fontSize:11,color:C.gold,fontWeight:700,marginBottom:8}}>2 {t("A que seleccion le vas?","Your team?")}</div>
-            {flag&&(
-              <div style={{display:"flex",alignItems:"center",gap:10,background:C.goldDim,borderRadius:10,padding:"8px 12px",marginBottom:10,border:`1px solid ${C.goldBorder}`}}>
-                <span style={{fontSize:28}}>{flag}</span>
-                <div style={{flex:1}}><div style={{fontSize:13,fontWeight:800,color:C.white}}>{TEAMS.find(x=>x.flag===flag)?.name}</div><div style={{fontSize:10,color:C.green}}>OK</div></div>
-                <button onClick={()=>setFlag("")} style={{background:"none",border:"none",color:C.gray,cursor:"pointer",fontSize:16}}>✕</button>
-              </div>
-            )}
+            {flag&&(<div style={{display:"flex",alignItems:"center",gap:10,background:C.goldDim,borderRadius:10,padding:"8px 12px",marginBottom:10,border:`1px solid ${C.goldBorder}`}}>
+              <span style={{fontSize:28}}>{flag}</span>
+              <div style={{flex:1}}><div style={{fontSize:13,fontWeight:800,color:C.white}}>{TEAMS.find(x=>x.flag===flag)?.name}</div><div style={{fontSize:10,color:C.green}}>OK</div></div>
+              <button onClick={()=>setFlag("")} style={{background:"none",border:"none",color:C.gray,cursor:"pointer",fontSize:16}}>✕</button>
+            </div>)}
             <input value={q} onChange={e=>setQ(e.target.value)} placeholder={t("Buscar seleccion...","Search team...")}
-              style={{width:"100%",background:C.grayDark,border:`1px solid ${C.grayDark}`,borderRadius:9,padding:"8px 12px",color:C.white,fontSize:12,outline:"none",boxSizing:"border-box",marginBottom:8}} />
+              style={{width:"100%",background:C.grayDark,border:`1px solid ${C.grayDark}`,borderRadius:9,padding:"8px 12px",color:C.white,fontSize:12,outline:"none",boxSizing:"border-box",marginBottom:8}}/>
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:5,marginBottom:14,maxHeight:180,overflowY:"auto",padding:"2px"}}>
-              {filtered.map(team=>(
-                <button key={team.name} onClick={()=>setFlag(team.flag)}
-                  style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:flag===team.flag?C.goldDim:"rgba(255,255,255,0.03)",border:`2px solid ${flag===team.flag?C.gold:"transparent"}`,borderRadius:9,cursor:"pointer",padding:"7px 3px"}}>
-                  <span style={{fontSize:24}}>{team.flag}</span>
-                  <span style={{fontSize:7,color:flag===team.flag?C.gold:C.gray,textAlign:"center",lineHeight:1.2}}>{team.name}</span>
-                </button>
-              ))}
+              {filtered.map(team=>(<button key={team.name} onClick={()=>setFlag(team.flag)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,background:flag===team.flag?C.goldDim:"rgba(255,255,255,0.03)",border:`2px solid ${flag===team.flag?C.gold:"transparent"}`,borderRadius:9,cursor:"pointer",padding:"7px 3px"}}>
+                <span style={{fontSize:24}}>{team.flag}</span>
+                <span style={{fontSize:7,color:flag===team.flag?C.gold:C.gray,textAlign:"center",lineHeight:1.2}}>{team.name}</span>
+              </button>))}
             </div>
             {err&&<div style={{background:"rgba(230,57,70,0.15)",border:"1px solid rgba(230,57,70,0.3)",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#FF6B7A",marginBottom:10}}>{err}</div>}
             <button onClick={doProfile} disabled={loading||!name.trim()||!flag}
@@ -406,32 +399,29 @@ function Onboarding({t, onDone}) {
   );
 }
 
-
-function HomeTab({t, matches, preds, onPred, rooms, user}) {
-  const total = Object.keys(preds).length;
-  return (
+// ─── HOME ──────────────────────────────────────────────────────────────────────
+function HomeTab({t,matches,preds,onPred,rooms,user}){
+  const total=Object.keys(preds).length;
+  const pts=matches.reduce((acc,m)=>{const pred=preds[m.id];if(!pred||m.hs===null)return acc;const actual=m.hs>m.as?"home":m.as>m.hs?"away":"draw";return acc+(pred===actual?3:0);},0);
+  return(
     <div style={{padding:16}}>
       <div style={{background:"linear-gradient(135deg,#0d1f4e,#1a3570)",borderRadius:18,padding:20,marginBottom:14,border:"1px solid rgba(255,215,0,0.35)",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",top:-30,right:-20,fontSize:120,opacity:0.07}}>🏆</div>
         <div style={{fontSize:10,color:C.gold,letterSpacing:3,fontWeight:800,marginBottom:6,display:"flex",alignItems:"center",gap:6}}>
-          <div style={{width:6,height:6,borderRadius:"50%",background:C.green,animation:"pulse 1s ease infinite"}} />
-          MUNDIAL 2026 · {t("EN VIVO","LIVE")}
+          <div style={{width:6,height:6,borderRadius:"50%",background:C.green,animation:"pulse 1s ease infinite"}}/>
+          MUNDIAL 2026 · {t("EN JUEGO","LIVE")}
         </div>
-        <div style={{fontSize:17,fontWeight:900,marginBottom:2}}>Mexico vs Sudafrica</div>
+        <div style={{fontSize:17,fontWeight:900,marginBottom:2}}>🇲🇽 México vs Sudáfrica 🇿🇦</div>
         <div style={{fontSize:11,color:C.gray}}>Jun 11 · 15:00 ET · Estadio Azteca</div>
         <div style={{display:"flex",gap:8,marginTop:10}}>
-          <div style={{background:"rgba(255,215,0,0.15)",border:`1px solid ${C.gold}`,borderRadius:8,padding:"4px 10px",fontSize:11,color:C.gold,fontWeight:700}}>
-            {t("En vivo","Live")}
-          </div>
-          <a href="https://www.youtube.com/results?search_query=Mexico+Sudafrica+Mundial+2026+resumen" target="_blank" rel="noopener noreferrer"
-            style={{background:"rgba(255,0,0,0.15)",border:"1px solid rgba(255,0,0,0.4)",borderRadius:8,padding:"4px 10px",fontSize:11,color:"#FF4444",fontWeight:700,textDecoration:"none"}}>
-            YouTube
-          </a>
+          <div style={{background:"rgba(255,215,0,0.15)",border:`1px solid ${C.gold}`,borderRadius:8,padding:"4px 10px",fontSize:11,color:C.gold,fontWeight:700}}>{t("En vivo","Live")}</div>
+          <a href="https://www.youtube.com/results?search_query=Mexico+Sudafrica+Mundial+2026+resumen+goles" target="_blank" rel="noopener noreferrer"
+            style={{background:"rgba(255,0,0,0.15)",border:"1px solid rgba(255,0,0,0.4)",borderRadius:8,padding:"4px 10px",fontSize:11,color:"#FF4444",fontWeight:700,textDecoration:"none"}}>▶ YouTube</a>
         </div>
       </div>
       {user&&(
         <div style={{display:"flex",gap:8,marginBottom:14}}>
-          {[{icon:"🎯",val:total,label:t("predicciones","predictions"),color:C.gold},{icon:"🏅",val:rooms.length,label:t("grupos","groups"),color:C.blueLight},{icon:"💾",val:"OK",label:t("guardado","saved"),color:C.green}].map((s,i)=>(
+          {[{icon:"🎯",val:total,label:t("predicciones","preds"),color:C.gold},{icon:"🏅",val:pts,label:t("puntos","points"),color:C.blueLight},{icon:"👥",val:rooms.length,label:t("grupos","groups"),color:C.green}].map((s,i)=>(
             <div key={i} style={{flex:1,background:C.bgCard,borderRadius:12,padding:"10px 8px",border:"1px solid rgba(255,255,255,0.06)",textAlign:"center"}}>
               <div style={{fontSize:18}}>{s.icon}</div>
               <div style={{fontSize:16,fontWeight:900,color:s.color}}>{s.val}</div>
@@ -440,114 +430,92 @@ function HomeTab({t, matches, preds, onPred, rooms, user}) {
           ))}
         </div>
       )}
-      <Sec icon="⚽" title={t("Partidos del dia","Today matches")} />
-      {matches.slice(0,3).map(m=><MatchCard key={m.id} match={m} pred={preds[m.id]} onPred={onPred} t={t} />)}
-      <Sec icon="📅" title={t("Proximos","Upcoming")} />
-      {matches.slice(3,6).map(m=><MatchCard key={m.id} match={m} pred={preds[m.id]} onPred={onPred} t={t} />)}
+      <Sec icon="⚽" title={t("Partidos del dia","Today matches")}/>
+      {matches.slice(0,3).map(m=><MatchCard key={m.id} match={m} pred={preds[m.id]} onPred={onPred} t={t}/>)}
+      <Sec icon="📅" title={t("Proximos","Upcoming")}/>
+      {matches.slice(3,6).map(m=><MatchCard key={m.id} match={m} pred={preds[m.id]} onPred={onPred} t={t}/>)}
     </div>
   );
 }
 
-function CalendarTab({t, matches, preds, onPred, onResult}) {
-  const [filter, setFilter] = useState("ALL");
-  const [editId, setEditId] = useState(null);
-  const visible = filter==="ALL"?matches:matches.filter(m=>m.country===filter);
-  const grouped = visible.reduce((acc,m)=>{if(!acc[m.date]) acc[m.date]=[];acc[m.date].push(m);return acc;},{});
-  return (
+// ─── CALENDAR ──────────────────────────────────────────────────────────────────
+function CalendarTab({t,matches,preds,onPred,onResult}){
+  const [filter,setFilter]=useState("ALL");
+  const [editId,setEditId]=useState(null);
+  const visible=filter==="ALL"?matches:matches.filter(m=>m.country===filter);
+  const grouped=visible.reduce((acc,m)=>{if(!acc[m.date])acc[m.date]=[];acc[m.date].push(m);return acc;},{});
+  return(
     <div style={{padding:16}}>
-      <Sec icon="📅" title={t("Calendario","Calendar")} />
+      <Sec icon="📅" title={t("Calendario","Calendar")}/>
       <div style={{display:"flex",gap:6,marginBottom:14,overflowX:"auto",paddingBottom:4}}>
         {[["ALL",t("Todos","All"),"🌎"],["México","México","🇲🇽"],["USA","USA","🇺🇸"],["Canadá","Canadá","🇨🇦"]].map(([k,l,e])=>(
-          <button key={k} onClick={()=>setFilter(k)}
-            style={{flexShrink:0,padding:"5px 12px",borderRadius:20,border:`1px solid ${filter===k?C.gold:C.grayDark}`,background:filter===k?C.goldDim:C.bgCard,color:filter===k?C.gold:C.gray,fontSize:11,cursor:"pointer",fontWeight:filter===k?700:400}}>
-            {e} {l}
-          </button>
+          <button key={k} onClick={()=>setFilter(k)} style={{flexShrink:0,padding:"5px 12px",borderRadius:20,border:`1px solid ${filter===k?C.gold:C.grayDark}`,background:filter===k?C.goldDim:C.bgCard,color:filter===k?C.gold:C.gray,fontSize:11,cursor:"pointer",fontWeight:filter===k?700:400}}>{e} {l}</button>
         ))}
       </div>
       {Object.entries(grouped).map(([date,ms])=>(
         <div key={date}>
           <div style={{fontSize:10,color:C.gold,fontWeight:800,letterSpacing:2,marginBottom:6,marginTop:10,paddingLeft:8,borderLeft:`3px solid ${C.gold}`}}>{date.toUpperCase()}</div>
-          {ms.map(m=><MatchCard key={m.id} match={m} pred={preds[m.id]} onPred={onPred} t={t} editId={editId} setEditId={setEditId} onResult={onResult} showEdit />)}
+          {ms.map(m=><MatchCard key={m.id} match={m} pred={preds[m.id]} onPred={onPred} t={t} editId={editId} setEditId={setEditId} onResult={onResult} showEdit/>)}
         </div>
       ))}
     </div>
   );
 }
 
-function MatchCard({match:m, pred, onPred, t, editId, setEditId, onResult, showEdit}) {
-  const [hg, setHg] = useState("");
-  const [ag, setAg] = useState("");
-  const isEditing = editId===m.id;
-  const hasResult = m.hs!==null&&m.as!==null;
-  const submit = () => {
+// ─── MATCH CARD ────────────────────────────────────────────────────────────────
+function MatchCard({match:m,pred,onPred,t,editId,setEditId,onResult,showEdit}){
+  const [hg,setHg]=useState("");const [ag,setAg]=useState("");
+  const isEditing=editId===m.id;
+  const hasResult=m.hs!==null&&m.as!==null;
+  const submit=()=>{
     const h=parseInt(hg),a=parseInt(ag);
-    if(isNaN(h)||isNaN(a)||h<0||a<0) return;
-    onResult&&onResult(m.id,h,a);
-    setHg("");setAg("");
-    setEditId&&setEditId(null);
+    if(isNaN(h)||isNaN(a)||h<0||a<0)return;
+    onResult&&onResult(m.id,h,a);setHg("");setAg("");setEditId&&setEditId(null);
   };
-  return (
+  const ytUrl=`https://www.youtube.com/results?search_query=${encodeURIComponent(m.home+" vs "+m.away+" Mundial 2026 resumen goles")}`;
+  return(
     <div style={{background:C.bgCard,borderRadius:14,padding:"12px 14px",marginBottom:10,border:`1px solid ${hasResult?C.green:pred?C.blueLight:C.grayDark}`,transition:"border-color 0.3s"}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
         <div style={{fontSize:10,color:C.gray}}>{t("Grupo","Group")} {m.group} · {m.time} · {m.venue}</div>
         <div style={{fontSize:11}}>{m.country==="México"?"🇲🇽":m.country==="USA"?"🇺🇸":"🇨🇦"}</div>
       </div>
       <div style={{display:"flex",alignItems:"center",gap:8}}>
-        <button onClick={()=>onPred&&onPred(m.id,"home")}
-          style={{flex:1,background:pred==="home"?"rgba(74,127,232,0.2)":"rgba(255,255,255,0.02)",border:`2px solid ${pred==="home"?C.blueLight:"transparent"}`,borderRadius:12,padding:"10px 6px",cursor:"pointer",transform:pred==="home"?"scale(1.03)":"scale(1)",transition:"all 0.2s"}}>
+        <button onClick={()=>onPred&&onPred(m.id,"home")} style={{flex:1,background:pred==="home"?"rgba(74,127,232,0.2)":"rgba(255,255,255,0.02)",border:`2px solid ${pred==="home"?C.blueLight:"transparent"}`,borderRadius:12,padding:"10px 6px",cursor:"pointer",transform:pred==="home"?"scale(1.03)":"scale(1)",transition:"all 0.2s"}}>
           <div style={{fontSize:26,marginBottom:3}}>{m.hf}</div>
           <div style={{fontSize:11,color:pred==="home"?C.white:C.gray,fontWeight:pred==="home"?700:400,textAlign:"center",lineHeight:1.3}}>{m.home}</div>
-          {pred==="home"&&<div style={{fontSize:9,color:C.blueLight,marginTop:2}}>OK {t("Tu pick","Your pick")}</div>}
+          {pred==="home"&&<div style={{fontSize:9,color:C.blueLight,marginTop:2}}>✓ pick</div>}
         </button>
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,minWidth:54}}>
-          {hasResult
-            ?<div style={{fontSize:14,fontWeight:800,color:C.gold,background:C.goldDim,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.goldBorder}`}}>{m.hs}-{m.as}</div>
-            :<div style={{fontSize:11,color:C.gray,fontWeight:700}}>VS</div>
-          }
-          <button onClick={()=>onPred&&onPred(m.id,"draw")}
-            style={{fontSize:10,padding:"3px 8px",borderRadius:10,border:`1px solid ${pred==="draw"?C.gold:C.grayDark}`,background:pred==="draw"?C.goldDim:"transparent",color:pred==="draw"?C.gold:C.gray,cursor:"pointer"}}>
-            {t("Empate","Draw")}
-          </button>
+          {hasResult?<div style={{fontSize:14,fontWeight:800,color:C.gold,background:C.goldDim,padding:"4px 8px",borderRadius:8,border:`1px solid ${C.goldBorder}`}}>{m.hs}-{m.as}</div>:<div style={{fontSize:11,color:C.gray,fontWeight:700}}>VS</div>}
+          <button onClick={()=>onPred&&onPred(m.id,"draw")} style={{fontSize:10,padding:"3px 8px",borderRadius:10,border:`1px solid ${pred==="draw"?C.gold:C.grayDark}`,background:pred==="draw"?C.goldDim:"transparent",color:pred==="draw"?C.gold:C.gray,cursor:"pointer"}}>{t("Empate","Draw")}</button>
         </div>
-        <button onClick={()=>onPred&&onPred(m.id,"away")}
-          style={{flex:1,background:pred==="away"?"rgba(74,127,232,0.2)":"rgba(255,255,255,0.02)",border:`2px solid ${pred==="away"?C.blueLight:"transparent"}`,borderRadius:12,padding:"10px 6px",cursor:"pointer",transform:pred==="away"?"scale(1.03)":"scale(1)",transition:"all 0.2s"}}>
+        <button onClick={()=>onPred&&onPred(m.id,"away")} style={{flex:1,background:pred==="away"?"rgba(74,127,232,0.2)":"rgba(255,255,255,0.02)",border:`2px solid ${pred==="away"?C.blueLight:"transparent"}`,borderRadius:12,padding:"10px 6px",cursor:"pointer",transform:pred==="away"?"scale(1.03)":"scale(1)",transition:"all 0.2s"}}>
           <div style={{fontSize:26,marginBottom:3}}>{m.af}</div>
           <div style={{fontSize:11,color:pred==="away"?C.white:C.gray,fontWeight:pred==="away"?700:400,textAlign:"center",lineHeight:1.3}}>{m.away}</div>
-          {pred==="away"&&<div style={{fontSize:9,color:C.blueLight,marginTop:2}}>OK {t("Tu pick","Your pick")}</div>}
+          {pred==="away"&&<div style={{fontSize:9,color:C.blueLight,marginTop:2}}>✓ pick</div>}
         </button>
       </div>
-      {hasResult&&(
-        <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(m.home+" "+m.away+" Mundial 2026")}`} target="_blank" rel="noopener noreferrer"
-          style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4,marginTop:8,padding:"5px",background:"rgba(255,0,0,0.06)",border:"1px solid rgba(255,0,0,0.2)",borderRadius:7,color:"#FF4444",fontSize:10,textDecoration:"none"}}>
-          YouTube {t("Resumen","Recap")}
-        </a>
-      )}
+      <a href={ytUrl} target="_blank" rel="noopener noreferrer"
+        style={{display:"flex",alignItems:"center",justifyContent:"center",gap:4,marginTop:8,padding:"5px",background:"rgba(255,0,0,0.06)",border:"1px solid rgba(255,0,0,0.2)",borderRadius:7,color:"#FF4444",fontSize:10,textDecoration:"none"}}>
+        ▶ {hasResult?t("Ver resumen","Watch recap"):t("Buscar en YouTube","Search YouTube")}
+      </a>
       {showEdit&&(
         <div style={{marginTop:8}}>
           {isEditing?(
             <div style={{background:C.grayDark,borderRadius:10,padding:12}}>
               <div style={{fontSize:11,color:C.gray,textAlign:"center",marginBottom:8}}>{t("Marcador final","Final score")}</div>
               <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10}}>
-                <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:11,color:C.gray,marginBottom:4}}>{m.hf}</div>
-                  <input type="number" min="0" max="20" value={hg} onChange={e=>setHg(e.target.value)} placeholder="0"
-                    style={{width:50,textAlign:"center",background:C.bgCard,border:`2px solid ${C.gold}`,borderRadius:10,padding:"8px 4px",color:C.white,fontSize:22,fontWeight:900,outline:"none"}} />
-                </div>
+                <div style={{textAlign:"center"}}><div style={{fontSize:11,color:C.gray,marginBottom:4}}>{m.hf}</div><input type="number" min="0" max="20" value={hg} onChange={e=>setHg(e.target.value)} placeholder="0" style={{width:50,textAlign:"center",background:C.bgCard,border:`2px solid ${C.gold}`,borderRadius:10,padding:"8px 4px",color:C.white,fontSize:22,fontWeight:900,outline:"none"}}/></div>
                 <div style={{fontSize:18,color:C.gray}}>-</div>
-                <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:11,color:C.gray,marginBottom:4}}>{m.af}</div>
-                  <input type="number" min="0" max="20" value={ag} onChange={e=>setAg(e.target.value)} placeholder="0"
-                    style={{width:50,textAlign:"center",background:C.bgCard,border:`2px solid ${C.gold}`,borderRadius:10,padding:"8px 4px",color:C.white,fontSize:22,fontWeight:900,outline:"none"}} />
-                </div>
+                <div style={{textAlign:"center"}}><div style={{fontSize:11,color:C.gray,marginBottom:4}}>{m.af}</div><input type="number" min="0" max="20" value={ag} onChange={e=>setAg(e.target.value)} placeholder="0" style={{width:50,textAlign:"center",background:C.bgCard,border:`2px solid ${C.gold}`,borderRadius:10,padding:"8px 4px",color:C.white,fontSize:22,fontWeight:900,outline:"none"}}/></div>
               </div>
               <div style={{display:"flex",gap:6}}>
-                <button onClick={submit} style={{flex:1,padding:"8px",background:`linear-gradient(135deg,${C.gold},#FFA500)`,border:"none",borderRadius:8,color:"#000",fontSize:13,fontWeight:800,cursor:"pointer"}}>OK {t("Guardar","Save")}</button>
+                <button onClick={submit} style={{flex:1,padding:"8px",background:`linear-gradient(135deg,${C.gold},#FFA500)`,border:"none",borderRadius:8,color:"#000",fontSize:13,fontWeight:800,cursor:"pointer"}}>✅ {t("Guardar","Save")}</button>
                 <button onClick={()=>setEditId&&setEditId(null)} style={{flex:1,padding:"8px",background:"transparent",border:`1px solid ${C.grayDark}`,borderRadius:8,color:C.gray,fontSize:12,cursor:"pointer"}}>{t("Cancelar","Cancel")}</button>
               </div>
             </div>
           ):(
-            <button onClick={()=>setEditId&&setEditId(m.id)}
-              style={{width:"100%",marginTop:2,padding:"6px",background:"rgba(255,255,255,0.02)",border:`1px solid ${C.grayDark}`,borderRadius:8,color:C.gray,fontSize:11,cursor:"pointer"}}>
+            <button onClick={()=>setEditId&&setEditId(m.id)} style={{width:"100%",marginTop:2,padding:"6px",background:"rgba(255,255,255,0.02)",border:`1px solid ${C.grayDark}`,borderRadius:8,color:C.gray,fontSize:11,cursor:"pointer"}}>
               {hasResult?t("Editar resultado","Edit result"):t("Agregar resultado","Add result")}
             </button>
           )}
@@ -557,197 +525,41 @@ function MatchCard({match:m, pred, onPred, t, editId, setEditId, onResult, showE
   );
 }
 
+// ─── GROUPS ────────────────────────────────────────────────────────────────────
+function GroupsTab({t,rooms,setRooms,user,preds,matches}){
+  const [sel,setSel]=useState(null);
+  const [showCreate,setShowCreate]=useState(false);
+  const [newName,setNewName]=useState("");
+  const [newEmoji,setNewEmoji]=useState("👫");
+  const [joinCode,setJoinCode]=useState("");
+  const [showJoin,setShowJoin]=useState(false);
+  const emojis=["👫","💼","🌍","🔥","⚽","🏆","🎯","🎮","🍺","👊","🇲🇽","🌮"];
 
-function MatchHosting({t, room, user, matches}) {
-  const [events, setEvents] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("wc26_events_"+room?.id)||"[]"); } catch(e){return [];}
-  });
-  const [showAdd, setShowAdd] = useState(false);
-  const [selMatch, setSelMatch] = useState("");
-  const [host, setHost] = useState("");
-  const [address, setAddress] = useState("");
-  const [note, setNote] = useState("");
-  const [attendees, setAttendees] = useState([]);
-
-  const save = (ev) => {
-    try{localStorage.setItem("wc26_events_"+room?.id, JSON.stringify(ev));}catch(e){}
-  };
-
-  const addEvent = () => {
-    if(!selMatch||!host.trim()) return;
-    const match = matches.find(m=>m.id===parseInt(selMatch));
-    if(!match) return;
-    const ev = {
-      id: Date.now()+"",
-      matchId: match.id,
-      matchLabel: match.hf+" "+match.home+" vs "+match.away+" "+match.af,
-      matchDate: match.date,
-      matchTime: match.time,
-      host: host.trim(),
-      address: address.trim(),
-      note: note.trim(),
-      attendees: [user?.name||t("Tu","You")],
-      createdBy: user?.name,
-    };
-    const updated = [...events, ev];
-    setEvents(updated); save(updated);
-    setShowAdd(false); setSelMatch(""); setHost(""); setAddress(""); setNote("");
-  };
-
-  const toggleAttend = (evId) => {
-    const myName = user?.name||t("Invitado","Guest");
-    const updated = events.map(ev => {
-      if(ev.id!==evId) return ev;
-      const isIn = ev.attendees.includes(myName);
-      return {...ev, attendees: isIn?ev.attendees.filter(a=>a!==myName):[...ev.attendees,myName]};
-    });
-    setEvents(updated); save(updated);
-  };
-
-  const deleteEvent = (evId) => {
-    const updated = events.filter(ev=>ev.id!==evId);
-    setEvents(updated); save(updated);
-  };
-
-  return (
-    <div style={{marginTop:16}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <Sec icon="🏠" title={t("Ver partido en casa","Watch party")} />
-        <button onClick={()=>setShowAdd(s=>!s)}
-          style={{flexShrink:0,background:C.goldDim,border:`1px solid ${C.goldBorder}`,borderRadius:10,padding:"5px 12px",color:C.gold,fontSize:11,cursor:"pointer",fontWeight:700,marginBottom:10}}>
-          + {t("Organizar","Host")}
-        </button>
-      </div>
-
-      {showAdd&&(
-        <div style={{background:C.bgCard,borderRadius:14,padding:14,marginBottom:12,border:`1px solid ${C.goldBorder}`}}>
-          <div style={{fontSize:13,fontWeight:700,color:C.white,marginBottom:12}}>🏠 {t("Organizar partido","Host a watch party")}</div>
-
-          <div style={{fontSize:11,color:C.gray,marginBottom:5}}>{t("Partido","Match")}</div>
-          <select value={selMatch} onChange={e=>setSelMatch(e.target.value)}
-            style={{width:"100%",background:C.grayDark,border:`1px solid ${C.goldBorder}`,borderRadius:8,padding:"8px 10px",color:C.white,fontSize:12,outline:"none",marginBottom:10,boxSizing:"border-box"}}>
-            <option value="">{t("Selecciona un partido...","Select a match...")}</option>
-            {matches.map(m=><option key={m.id} value={m.id}>{m.hf} {m.home} vs {m.away} {m.af} · {m.date}</option>)}
-          </select>
-
-          <div style={{fontSize:11,color:C.gray,marginBottom:5}}>{t("Quien organiza?","Who hosts?")}</div>
-          <input value={host} onChange={e=>setHost(e.target.value)} placeholder={user?.name||t("Tu nombre","Your name")}
-            style={{width:"100%",background:C.grayDark,border:`1px solid ${C.grayDark}`,borderRadius:8,padding:"8px 10px",color:C.white,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:8}} />
-
-          <div style={{fontSize:11,color:C.gray,marginBottom:5}}>{t("Direccion (opcional)","Address (optional)")}</div>
-          <input value={address} onChange={e=>setAddress(e.target.value)} placeholder={t("Calle y colonia...","Street and area...")}
-            style={{width:"100%",background:C.grayDark,border:`1px solid ${C.grayDark}`,borderRadius:8,padding:"8px 10px",color:C.white,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:8}} />
-
-          <div style={{fontSize:11,color:C.gray,marginBottom:5}}>{t("Nota (pizza, cervezas, etc)","Note (pizza, drinks, etc)")}</div>
-          <input value={note} onChange={e=>setNote(e.target.value)} placeholder={t("Ej: se pide pizza, traer silla","e.g. ordering pizza, bring a chair")}
-            style={{width:"100%",background:C.grayDark,border:`1px solid ${C.grayDark}`,borderRadius:8,padding:"8px 10px",color:C.white,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:12}} />
-
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={addEvent} disabled={!selMatch||!host.trim()}
-              style={{flex:1,padding:"9px",background:selMatch&&host.trim()?`linear-gradient(135deg,${C.gold},#FFA500)`:C.grayDark,border:"none",borderRadius:8,color:selMatch&&host.trim()?"#000":C.gray,fontSize:13,fontWeight:800,cursor:selMatch&&host.trim()?"pointer":"default"}}>
-              🏠 {t("Crear evento","Create event")}
-            </button>
-            <button onClick={()=>setShowAdd(false)} style={{flex:1,padding:"9px",background:"transparent",border:`1px solid ${C.grayDark}`,borderRadius:8,color:C.gray,fontSize:12,cursor:"pointer"}}>{t("Cancelar","Cancel")}</button>
-          </div>
-        </div>
-      )}
-
-      {events.length===0&&!showAdd&&(
-        <div style={{textAlign:"center",padding:"16px 0",color:C.gray,fontSize:12}}>
-          🏠 {t("Nadie ha organizado un partido todavia","No watch parties yet")}
-        </div>
-      )}
-
-      {events.map(ev=>{
-        const isAttending = ev.attendees.includes(user?.name||t("Invitado","Guest"));
-        return(
-          <div key={ev.id} style={{background:C.bgCard,borderRadius:14,padding:14,marginBottom:10,border:`1px solid ${isAttending?C.green:C.grayDark}`}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:800,color:C.white}}>{ev.matchLabel}</div>
-                <div style={{fontSize:11,color:C.gray,marginTop:2}}>{ev.matchDate} · {ev.matchTime}</div>
-              </div>
-              {ev.createdBy===user?.name&&(
-                <button onClick={()=>deleteEvent(ev.id)} style={{background:"none",border:"none",color:C.gray,cursor:"pointer",fontSize:16,flexShrink:0}}>✕</button>
-              )}
-            </div>
-
-            <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:10}}>
-              <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12}}>
-                <span style={{fontSize:16}}>🏠</span>
-                <span style={{color:C.white,fontWeight:600}}>{t("Casa de","At")}: {ev.host}</span>
-              </div>
-              {ev.address&&(
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12}}>
-                  <span style={{fontSize:16}}>📍</span>
-                  <span style={{color:C.gray}}>{ev.address}</span>
-                </div>
-              )}
-              {ev.note&&(
-                <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12}}>
-                  <span style={{fontSize:16}}>📝</span>
-                  <span style={{color:C.gray}}>{ev.note}</span>
-                </div>
-              )}
-            </div>
-
-            <div style={{display:"flex",alignItems:"center",gap:8}}>
-              <div style={{flex:1}}>
-                <div style={{fontSize:10,color:C.gray,marginBottom:4}}>
-                  👥 {ev.attendees.length} {t("van","going")}: {ev.attendees.join(", ")}
-                </div>
-                <div style={{display:"flex",gap:4}}>
-                  {ev.attendees.slice(0,6).map((a,i)=>(
-                    <div key={i} style={{width:24,height:24,borderRadius:"50%",background:`linear-gradient(135deg,${C.blue},${C.blueLight})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff",flexShrink:0}}>
-                      {a[0]?.toUpperCase()}
-                    </div>
-                  ))}
-                  {ev.attendees.length>6&&<div style={{width:24,height:24,borderRadius:"50%",background:C.grayDark,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,color:C.gray}}>+{ev.attendees.length-6}</div>}
-                </div>
-              </div>
-              <button onClick={()=>toggleAttend(ev.id)}
-                style={{padding:"7px 14px",background:isAttending?"rgba(46,204,113,0.15)":C.goldDim,border:`1px solid ${isAttending?C.green:C.goldBorder}`,borderRadius:10,color:isAttending?C.green:C.gold,fontSize:12,cursor:"pointer",fontWeight:700,flexShrink:0}}>
-                {isAttending?("✓ "+t("Voy","Going")):t("Confirmar","I'm going")}
-              </button>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function GroupsTab({t, rooms, setRooms, user, preds, matches}) {
-  const [sel, setSel] = useState(null);
-  const [showCreate, setShowCreate] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [newEmoji, setNewEmoji] = useState("👫");
-  const [joinCode, setJoinCode] = useState("");
-  const [showJoin, setShowJoin] = useState(false);
-  const emojis = ["👫","💼","🌍","🔥","⚽","🏆","🎯","🎮","🍺","👊","🇲🇽","🌮"];
-
-  const myPts = () => {
+  const calcPts=(userId)=>{
+    const userPreds=preds;
     let pts=0;
     matches.forEach(m=>{
-      const pred=preds[m.id];
-      if(!pred||m.hs===null) return;
+      const pred=userPreds[m.id];
+      if(!pred||m.hs===null)return;
       const actual=m.hs>m.as?"home":m.as>m.hs?"away":"draw";
-      if(pred===actual) pts+=3;
+      if(pred===actual)pts+=3;
     });
     return pts;
   };
 
-  const createRoom = () => {
-    if(!newName.trim()) return;
+  const createRoom=()=>{
+    if(!newName.trim())return;
     const code=Math.random().toString(36).substr(2,6).toUpperCase();
-    setRooms([...rooms,{id:Date.now()+"",name:newName.trim(),emoji:newEmoji,code}]);
-    setShowCreate(false); setNewName("");
+    setRooms([...rooms,{id:Date.now()+"",name:newName.trim(),emoji:newEmoji,code,members:[{name:user?.name,flag:user?.flag,pts:0}]}]);
+    setShowCreate(false);setNewName("");
   };
 
-  if(sel) {
+  if(sel){
     const room=rooms.find(r=>r.id===sel);
-    const pts=myPts();
-    return (
+    const myPts=calcPts(user?.id);
+    const played=matches.filter(m=>m.hs!==null&&preds[m.id]).length;
+    const correct=matches.filter(m=>{const pred=preds[m.id];if(!pred||m.hs===null)return false;const actual=m.hs>m.as?"home":m.as>m.hs?"away":"draw";return pred===actual;}).length;
+    return(
       <div style={{padding:16}}>
         <button onClick={()=>setSel(null)} style={{background:"none",border:"none",color:C.gold,fontSize:13,cursor:"pointer",marginBottom:12}}>{"<"} {t("Volver","Back")}</button>
         <div style={{background:"linear-gradient(135deg,#1a2f6e,#0a1428)",borderRadius:16,padding:16,marginBottom:14,border:`1px solid ${C.goldBorder}`}}>
@@ -756,45 +568,71 @@ function GroupsTab({t, rooms, setRooms, user, preds, matches}) {
           <div style={{fontSize:12,color:C.gold,marginTop:4}}>{t("Codigo","Code")}: <span style={{fontWeight:900,letterSpacing:3}}>{room?.code}</span></div>
           <div style={{fontSize:11,color:C.gray,marginTop:2}}>{t("Comparte con tus amigos","Share with friends")}</div>
         </div>
-        <Sec icon="🏅" title={t("Mis puntos","My points")} />
-        <div style={{background:C.goldDim,borderRadius:14,padding:16,border:`1px solid ${C.goldBorder}`,display:"flex",alignItems:"center",gap:14,marginBottom:12}}>
-          <div style={{fontSize:36}}>{user?.flag}</div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:16,fontWeight:700}}>{user?.name}</div>
-            <div style={{fontSize:12,color:C.gray}}>{matches.filter(m=>m.hs!==null&&preds[m.id]).length} {t("partidos","matches")}</div>
+
+        <Sec icon="🏅" title={t("Mi desempeno","My performance")}/>
+        <div style={{display:"flex",gap:8,marginBottom:14}}>
+          {[{icon:"⭐",val:myPts,label:"pts",color:C.gold},{icon:"✅",val:correct,label:t("aciertos","correct"),color:C.green},{icon:"⚽",val:played,label:t("jugados","played"),color:C.blueLight}].map((s,i)=>(
+            <div key={i} style={{flex:1,background:C.bgCard,borderRadius:12,padding:"12px 8px",border:"1px solid rgba(255,255,255,0.06)",textAlign:"center"}}>
+              <div style={{fontSize:22}}>{s.icon}</div>
+              <div style={{fontSize:20,fontWeight:900,color:s.color}}>{s.val}</div>
+              <div style={{fontSize:9,color:C.gray,marginTop:2}}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        <Sec icon="📊" title={t("Tabla de posiciones","Leaderboard")}/>
+        <div style={{background:C.bgCard,borderRadius:14,overflow:"hidden",border:`1px solid ${C.grayDark}`,marginBottom:14}}>
+          <div style={{display:"flex",padding:"8px 12px",borderBottom:`1px solid ${C.grayDark}`,fontSize:10,color:C.gray,fontWeight:700}}>
+            <div style={{width:30}}>#</div>
+            <div style={{flex:1}}>{t("Jugador","Player")}</div>
+            <div style={{width:50,textAlign:"center"}}>{t("Aciertos","Correct")}</div>
+            <div style={{width:40,textAlign:"right"}}>Pts</div>
           </div>
-          <div style={{textAlign:"right"}}>
-            <div style={{fontSize:28,fontWeight:900,color:C.gold}}>{pts}</div>
-            <div style={{fontSize:10,color:C.gray}}>pts</div>
+          {[{name:user?.name||t("Tú","You"),flag:user?.flag||"🌍",pts:myPts,correct}].map((p,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",padding:"10px 12px",background:i===0?"rgba(255,215,0,0.05)":"transparent",borderBottom:`1px solid ${C.grayDark}`}}>
+              <div style={{width:30,fontSize:14,fontWeight:800,color:i===0?C.gold:C.gray}}>{i+1}</div>
+              <div style={{flex:1,display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:20}}>{p.flag}</span>
+                <div>
+                  <div style={{fontSize:13,fontWeight:700,color:i===0?C.white:C.gray}}>{p.name}</div>
+                  <div style={{fontSize:9,color:C.gray}}>{p.correct} {t("aciertos","correct")}</div>
+                </div>
+              </div>
+              <div style={{width:50,textAlign:"center",fontSize:11,color:C.gray}}>{p.correct}</div>
+              <div style={{width:40,textAlign:"right",fontSize:18,fontWeight:900,color:C.gold}}>{p.pts}</div>
+            </div>
+          ))}
+          <div style={{padding:"10px 12px",fontSize:11,color:C.gray,textAlign:"center"}}>
+            {t("Invita amigos con el codigo para ver su tabla","Invite friends with the code to see full leaderboard")} 🔗 {room?.code}
           </div>
+        </div>
+
+        <div style={{background:C.bgCard,borderRadius:10,padding:12,border:`1px solid ${C.grayDark}`,fontSize:11,color:C.gray,lineHeight:1.9}}>
+          <div style={{color:C.gold,fontWeight:700,marginBottom:4}}>⏱ {t("Reglas","Rules")}</div>
+          ✅ {t("Acierto = 3 puntos","Correct = 3 points")}<br/>
+          ⏱ {t("Predicciones cierran 5 min antes","Predictions close 5 min before")}<br/>
+          🔒 {t("No puedes cambiar despues","Cannot change after kickoff")}
         </div>
       </div>
     );
   }
 
-  return (
+  return(
     <div style={{padding:16}}>
-      <Sec icon="👥" title={t("Mis Grupos","My Groups")} />
+      <Sec icon="👥" title={t("Mis Grupos","My Groups")}/>
       {rooms.map(room=>(
-        <div key={room.id} onClick={()=>setSel(room.id)}
-          style={{background:C.bgCard,borderRadius:14,padding:"13px 16px",marginBottom:10,border:`1px solid ${C.grayDark}`,cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
+        <div key={room.id} onClick={()=>setSel(room.id)} style={{background:C.bgCard,borderRadius:14,padding:"13px 16px",marginBottom:10,border:`1px solid ${C.grayDark}`,cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
           <div style={{fontSize:28}}>{room.emoji}</div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:15,fontWeight:700}}>{room.name}</div>
-            <div style={{fontSize:11,color:C.gold,marginTop:2}}>{room.code}</div>
-          </div>
+          <div style={{flex:1}}><div style={{fontSize:15,fontWeight:700}}>{room.name}</div><div style={{fontSize:11,color:C.gold,marginTop:2}}>{room.code}</div></div>
           <div style={{fontSize:18,color:C.gray}}>{">"}</div>
         </div>
       ))}
-      {rooms.length===0&&<div style={{textAlign:"center",padding:20,color:C.gray,fontSize:12}}>{t("Crea o unete a un grupo","Create or join a group")}</div>}
+      {rooms.length===0&&<div style={{textAlign:"center",padding:20,color:C.gray,fontSize:12}}>{t("Crea o unete a un grupo","Create or join a group")} 👥</div>}
       {showCreate?(
         <div style={{background:C.bgCard,borderRadius:14,padding:16,marginBottom:10,border:`1px solid ${C.goldBorder}`}}>
           <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>{t("Nuevo grupo","New group")}</div>
-          <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder={t("Nombre del grupo...","Group name...")}
-            style={{width:"100%",background:C.grayDark,border:`1px solid ${C.goldBorder}`,borderRadius:8,padding:"8px 12px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:10}} />
-          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>
-            {emojis.map(e=><button key={e} onClick={()=>setNewEmoji(e)} style={{fontSize:22,padding:5,borderRadius:8,border:`2px solid ${newEmoji===e?C.gold:"transparent"}`,background:newEmoji===e?C.goldDim:"transparent",cursor:"pointer"}}>{e}</button>)}
-          </div>
+          <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder={t("Nombre del grupo...","Group name...")} style={{width:"100%",background:C.grayDark,border:`1px solid ${C.goldBorder}`,borderRadius:8,padding:"8px 12px",color:C.white,fontSize:14,outline:"none",boxSizing:"border-box",marginBottom:10}}/>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:12}}>{emojis.map(e=><button key={e} onClick={()=>setNewEmoji(e)} style={{fontSize:22,padding:5,borderRadius:8,border:`2px solid ${newEmoji===e?C.gold:"transparent"}`,background:newEmoji===e?C.goldDim:"transparent",cursor:"pointer"}}>{e}</button>)}</div>
           <div style={{display:"flex",gap:8}}>
             <button onClick={createRoom} disabled={!newName.trim()} style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${C.gold},#FFA500)`,border:"none",borderRadius:8,color:"#000",fontSize:13,fontWeight:800,cursor:"pointer"}}>{t("Crear","Create")}</button>
             <button onClick={()=>setShowCreate(false)} style={{flex:1,padding:"9px",background:"transparent",border:`1px solid ${C.grayDark}`,borderRadius:8,color:C.gray,fontSize:12,cursor:"pointer"}}>{t("Cancelar","Cancel")}</button>
@@ -803,23 +641,19 @@ function GroupsTab({t, rooms, setRooms, user, preds, matches}) {
       ):showJoin?(
         <div style={{background:C.bgCard,borderRadius:14,padding:16,marginBottom:10,border:"1px solid rgba(74,127,232,0.3)"}}>
           <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>{t("Unirse con codigo","Join with code")}</div>
-          <input value={joinCode} onChange={e=>setJoinCode(e.target.value.toUpperCase())} placeholder="ABC123"
-            style={{width:"100%",background:C.grayDark,border:"1px solid rgba(74,127,232,0.3)",borderRadius:8,padding:"8px 12px",color:C.white,fontSize:18,fontWeight:700,outline:"none",boxSizing:"border-box",marginBottom:10,letterSpacing:4,textAlign:"center"}} />
+          <input value={joinCode} onChange={e=>setJoinCode(e.target.value.toUpperCase())} placeholder="ABC123" style={{width:"100%",background:C.grayDark,border:"1px solid rgba(74,127,232,0.3)",borderRadius:8,padding:"8px 12px",color:C.white,fontSize:18,fontWeight:700,outline:"none",boxSizing:"border-box",marginBottom:10,letterSpacing:4,textAlign:"center"}}/>
           <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>{const r=rooms.find(x=>x.code===joinCode);alert(r?t("Ya eres miembro","Already member"):t("Codigo no encontrado","Code not found"));setShowJoin(false);setJoinCode("");}}
-              style={{flex:1,padding:"9px",background:C.blueLight,border:"none",borderRadius:8,color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer"}}>{t("Unirme","Join")}</button>
+            <button onClick={()=>{const r=rooms.find(x=>x.code===joinCode);alert(r?t("Ya eres miembro","Already member"):t("Codigo no encontrado","Code not found"));setShowJoin(false);setJoinCode("");}} style={{flex:1,padding:"9px",background:C.blueLight,border:"none",borderRadius:8,color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer"}}>{t("Unirme","Join")}</button>
             <button onClick={()=>setShowJoin(false)} style={{flex:1,padding:"9px",background:"transparent",border:`1px solid ${C.grayDark}`,borderRadius:8,color:C.gray,fontSize:12,cursor:"pointer"}}>{t("Cancelar","Cancel")}</button>
           </div>
         </div>
       ):(
         <div style={{display:"flex",gap:8,marginTop:4}}>
           <button onClick={()=>setShowCreate(true)} style={{flex:1,background:C.goldDim,borderRadius:12,padding:"13px 8px",border:`1px solid ${C.goldBorder}`,cursor:"pointer",textAlign:"center"}}>
-            <div style={{fontSize:22}}>+</div>
-            <div style={{fontSize:12,color:C.gold,fontWeight:700,marginTop:4}}>{t("Crear grupo","Create group")}</div>
+            <div style={{fontSize:22}}>+</div><div style={{fontSize:12,color:C.gold,fontWeight:700,marginTop:4}}>{t("Crear grupo","Create group")}</div>
           </button>
           <button onClick={()=>setShowJoin(true)} style={{flex:1,background:C.blueDim,borderRadius:12,padding:"13px 8px",border:"1px solid rgba(74,127,232,0.3)",cursor:"pointer",textAlign:"center"}}>
-            <div style={{fontSize:22}}>🔗</div>
-            <div style={{fontSize:12,color:C.blueLight,fontWeight:700,marginTop:4}}>{t("Unirme","Join")}</div>
+            <div style={{fontSize:22}}>🔗</div><div style={{fontSize:12,color:C.blueLight,fontWeight:700,marginTop:4}}>{t("Unirme","Join")}</div>
           </button>
         </div>
       )}
@@ -827,62 +661,137 @@ function GroupsTab({t, rooms, setRooms, user, preds, matches}) {
   );
 }
 
-function AlbumTab({t}) {
-  const [selTeam, setSelTeam] = useState(null);
-  const [posFilter, setPosFilter] = useState("ALL");
-  const [search, setSearch] = useState("");
-  const [gf, setGf] = useState("ALL");
-  const groups = ["ALL","A","B","C","D","E","F","G","H","I","J","K","L"];
+// ─── ALBUM ─────────────────────────────────────────────────────────────────────
+function AlbumTab({t}){
+  const [selTeam,setSelTeam]=useState(null);
+  const [posFilter,setPosFilter]=useState("ALL");
+  const [search,setSearch]=useState("");
+  const [gf,setGf]=useState("ALL");
+  const [selPlayer,setSelPlayer]=useState(null);
+  // ── Supabase players state ──────────────────────────────────────────────────
+  const [teamPlayers,setTeamPlayers]=useState([]);
+  const [loadingPlayers,setLoadingPlayers]=useState(false);
+  const groups=["ALL","A","B","C","D","E","F","G","H","I","J","K","L"];
 
-  if(selTeam) {
-    const data = PLAYERS[selTeam.name]||{flag:selTeam.flag,players:[]};
-    const cols = COLORS[selTeam.name]||["#1D3D8F","#FFD700"];
-    const filtered = data.players.filter(p=>
-      (posFilter==="ALL"||p.pos===posFilter)&&
-      (search===""||p.name.toLowerCase().includes(search.toLowerCase()))
-    );
-    const byPos = {GK:[],DEF:[],MID:[],FWD:[]};
-    filtered.forEach(p=>{ if(byPos[p.pos]) byPos[p.pos].push(p); });
-    return (
+  // Cargar jugadores de Supabase cuando se selecciona un equipo
+  useEffect(()=>{
+    if(!selTeam) return;
+    setLoadingPlayers(true);
+    setTeamPlayers([]);
+    const url=`${SB_URL}/rest/v1/players?team=eq.${encodeURIComponent(selTeam.name)}&select=name,number,position,club,goals,assists,yellow_cards,red_cards&order=number.asc&limit=50`;
+    fetch(url,{
+      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
+    })
+    .then(r=>r.json())
+    .then(data=>{
+      if(Array.isArray(data)&&data.length>0){
+        setTeamPlayers(data.map(p=>({
+          num: p.number||0,
+          name: p.name||"",
+          pos: p.position||"FWD",
+          club: p.club||"",
+          goals: p.goals||0,
+          assists: p.assists||0,
+          yellow_cards: p.yellow_cards||0,
+          red_cards: p.red_cards||0
+        })));
+      }
+    })
+    .catch(e=>console.error("Players fetch error:",e))
+    .finally(()=>setLoadingPlayers(false));
+  },[selTeam?.name]);
+
+  if(selPlayer){
+    const tc=COLORS[selTeam?.name]||["#1D3D8F","#FFD700"];
+    const posEmoji={GK:"🧤",DEF:"🛡️",MID:"⚙️",FWD:"⚽"};
+    return(
       <div style={{padding:16}}>
-        <button onClick={()=>{setSelTeam(null);setPosFilter("ALL");setSearch("");}} style={{background:"none",border:"none",color:C.gold,fontSize:13,cursor:"pointer",marginBottom:12}}>{"<"} {t("Equipos","Teams")}</button>
+        <button onClick={()=>setSelPlayer(null)} style={{background:"none",border:"none",color:C.gold,fontSize:13,cursor:"pointer",marginBottom:12}}>{"<"} {t("Volver","Back")}</button>
+        <div style={{background:`linear-gradient(135deg,${tc[0]},${tc[1]})`,borderRadius:20,padding:20,marginBottom:16,boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:16}}>
+            <div style={{width:70,height:70,borderRadius:"50%",background:"rgba(0,0,0,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>{posEmoji[selPlayer.pos]||"⚽"}</div>
+            <div>
+              <div style={{fontSize:22,fontWeight:900,color:"#fff",textShadow:"0 2px 8px rgba(0,0,0,0.5)"}}>{selPlayer.name}</div>
+              <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",marginTop:4}}>{PL[selPlayer.pos]} · #{selPlayer.num}</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:2}}>{selTeam?.flag} {selTeam?.name}</div>
+            </div>
+          </div>
+        </div>
+        <div style={{background:C.bgCard,borderRadius:14,padding:16,border:`1px solid ${C.grayDark}`,marginBottom:12}}>
+          <div style={{fontSize:12,color:C.gold,fontWeight:700,marginBottom:8}}>🏟️ {t("Club actual","Current club")}</div>
+          <div style={{fontSize:16,fontWeight:800,color:C.white,marginBottom:4}}>{selPlayer.club||t("Por confirmar","TBD")}</div>
+          <div style={{fontSize:11,color:C.gray}}>{PL[selPlayer.pos]} · {selTeam?.flag} {selTeam?.name}</div>
+        </div>
+        <div style={{background:C.bgCard,borderRadius:14,padding:16,border:`1px solid ${C.grayDark}`,marginBottom:12}}>
+          <div style={{fontSize:12,color:C.gold,fontWeight:700,marginBottom:8}}>📊 {t("Estadísticas del torneo","Tournament stats")}</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+            {[{icon:"⚽",label:t("Goles","Goals"),val:selPlayer.goals||0},{icon:"🎯",label:t("Asistencias","Assists"),val:selPlayer.assists||0},{icon:"🟨",label:t("Tarjetas","Cards"),val:(selPlayer.yellow_cards||0)+(selPlayer.red_cards||0)}].map((s,i)=>(
+              <div key={i} style={{background:C.grayDark,borderRadius:10,padding:"10px 6px",textAlign:"center"}}>
+                <div style={{fontSize:18}}>{s.icon}</div>
+                <div style={{fontSize:20,fontWeight:900,color:C.gold}}>{s.val}</div>
+                <div style={{fontSize:9,color:C.gray,marginTop:2}}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(selPlayer.name+" mejores jugadas Mundial 2026")}`} target="_blank" rel="noopener noreferrer"
+          style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px",background:"rgba(255,0,0,0.08)",border:"1px solid rgba(255,0,0,0.25)",borderRadius:10,color:"#FF4444",fontSize:13,textDecoration:"none",fontWeight:600}}>
+          ▶ {t("Ver highlights en YouTube","Watch highlights on YouTube")}
+        </a>
+      </div>
+    );
+  }
+
+  if(selTeam){
+    const cols=COLORS[selTeam.name]||["#1D3D8F","#FFD700"];
+    const filtered=teamPlayers.filter(p=>(posFilter==="ALL"||p.pos===posFilter)&&(search===""||p.name.toLowerCase().includes(search.toLowerCase())));
+    const byPos={GK:[],DEF:[],MID:[],FWD:[]};
+    filtered.forEach(p=>{if(byPos[p.pos])byPos[p.pos].push(p);});
+    return(
+      <div style={{padding:16}}>
+        <button onClick={()=>{setSelTeam(null);setPosFilter("ALL");setSearch("");setTeamPlayers([]);}} style={{background:"none",border:"none",color:C.gold,fontSize:13,cursor:"pointer",marginBottom:12}}>{"<"} {t("Equipos","Teams")}</button>
         <div style={{background:`linear-gradient(135deg,${cols[0]},${cols[1]})`,borderRadius:16,padding:18,marginBottom:14,position:"relative",overflow:"hidden",boxShadow:"0 8px 32px rgba(0,0,0,0.5)"}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <div style={{fontSize:52}}>{selTeam.flag}</div>
             <div>
               <div style={{fontSize:20,fontWeight:900,color:"#fff",textShadow:"0 2px 8px rgba(0,0,0,0.5)"}}>{selTeam.name}</div>
-              <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginTop:3}}>{t("Grupo","Group")} {selTeam.group} · {data.players.length} {t("jugadores","players")}</div>
-              <div style={{fontSize:9,color:"rgba(255,255,255,0.35)",marginTop:2,letterSpacing:1}}>PANINI · MUNDIAL 2026</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.65)",marginTop:3}}>{t("Grupo","Group")} {selTeam.group} · {teamPlayers.length} {t("jugadores","players")}</div>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.35)",marginTop:2,letterSpacing:1}}>🃏 PANINI · FIFA 2026</div>
             </div>
           </div>
         </div>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Buscar jugador...","Search player...")}
-          style={{width:"100%",background:C.bgCard,border:`1px solid ${C.grayDark}`,borderRadius:10,padding:"8px 12px",color:C.white,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:10}} />
+        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder={t("Buscar jugador...","Search player...")} style={{width:"100%",background:C.bgCard,border:`1px solid ${C.grayDark}`,borderRadius:10,padding:"8px 12px",color:C.white,fontSize:13,outline:"none",boxSizing:"border-box",marginBottom:10}}/>
         <div style={{display:"flex",gap:6,marginBottom:14}}>
           {["ALL","GK","DEF","MID","FWD"].map(pos=>(
-            <button key={pos} onClick={()=>setPosFilter(pos)}
-              style={{flex:1,padding:"5px 2px",borderRadius:8,border:`1px solid ${posFilter===pos?(PC[pos]||C.gold):C.grayDark}`,background:posFilter===pos?(PC[pos]||C.gold)+"22":C.bgCard,color:posFilter===pos?(PC[pos]||C.gold):C.gray,fontSize:10,cursor:"pointer",fontWeight:posFilter===pos?700:400}}>
+            <button key={pos} onClick={()=>setPosFilter(pos)} style={{flex:1,padding:"5px 2px",borderRadius:8,border:`1px solid ${posFilter===pos?(PC[pos]||C.gold):C.grayDark}`,background:posFilter===pos?(PC[pos]||C.gold)+"22":C.bgCard,color:posFilter===pos?(PC[pos]||C.gold):C.gray,fontSize:10,cursor:"pointer",fontWeight:posFilter===pos?700:400}}>
               {pos==="ALL"?t("Todos","All"):pos}
             </button>
           ))}
         </div>
-        {data.players.length===0&&<div style={{textAlign:"center",padding:20,color:C.gray,fontSize:12}}>{t("Plantilla disponible pronto","Squad available soon")}</div>}
-        {Object.entries(byPos).map(([pos,group])=>group.length>0&&(
+        {loadingPlayers&&(
+          <div style={{textAlign:"center",padding:30,color:C.gray}}>
+            <div style={{fontSize:28,marginBottom:8}}>⏳</div>
+            <div style={{fontSize:12}}>{t("Cargando plantilla...","Loading squad...")}</div>
+          </div>
+        )}
+        {!loadingPlayers&&teamPlayers.length===0&&<div style={{textAlign:"center",padding:20,color:C.gray,fontSize:12}}>⚠️ {t("Sin jugadores en la base de datos","No players found")}</div>}
+        {!loadingPlayers&&Object.entries(byPos).map(([pos,group])=>group.length>0&&(
           <div key={pos} style={{marginBottom:14}}>
             <div style={{fontSize:10,fontWeight:800,color:PC[pos],letterSpacing:2,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
-              <div style={{width:7,height:7,borderRadius:"50%",background:PC[pos]}} />
-              {PL[pos]?.toUpperCase()} · {group.length}
+              <div style={{width:7,height:7,borderRadius:"50%",background:PC[pos]}}/>{PL[pos]?.toUpperCase()} · {group.length}
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-              {group.map(player=>{
+              {group.map((player,i)=>{
                 const tc=COLORS[selTeam.name]||["#1D3D8F","#FFD700"];
+                const posEmoji={GK:"🧤",DEF:"🛡️",MID:"⚙️",FWD:"⚽"};
                 return(
-                  <div key={player.id} style={{borderRadius:12,overflow:"hidden",border:"1.5px solid rgba(255,215,0,0.25)",background:`linear-gradient(160deg,${tc[0]},${tc[1]})`,boxShadow:"0 4px 12px rgba(0,0,0,0.4)",position:"relative"}}>
+                  <div key={i} onClick={()=>setSelPlayer(player)} style={{borderRadius:12,overflow:"hidden",border:"1.5px solid rgba(255,215,0,0.25)",background:`linear-gradient(160deg,${tc[0]},${tc[1]})`,boxShadow:"0 4px 12px rgba(0,0,0,0.4)",position:"relative",cursor:"pointer"}}>
                     <div style={{position:"absolute",top:4,left:5,fontSize:11,fontWeight:900,color:"rgba(255,255,255,0.9)",textShadow:"0 1px 4px rgba(0,0,0,0.8)",zIndex:2}}>{player.num}</div>
                     <div style={{position:"absolute",top:4,right:4,background:PC[player.pos],borderRadius:3,padding:"1px 4px",fontSize:7,fontWeight:800,color:"#000",zIndex:2}}>{player.pos}</div>
-                    <div style={{height:70,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.15)",fontSize:30}}>{player.pos==="GK"?"🧤":"⚽"}</div>
-                    <div style={{background:"rgba(0,0,0,0.75)",padding:"5px 4px",textAlign:"center"}}>
-                      <div style={{fontSize:9,fontWeight:800,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{player.name.split(" ").slice(-1)[0].toUpperCase()}</div>
+                    <div style={{height:65,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.15)",fontSize:28}}>{posEmoji[player.pos]||"⚽"}</div>
+                    <div style={{background:"rgba(0,0,0,0.75)",padding:"4px 4px"}}>
+                      <div style={{fontSize:9,fontWeight:800,color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",textAlign:"center"}}>{player.name.split(" ").slice(-1)[0].toUpperCase()}</div>
+                      <div style={{fontSize:7,color:"rgba(255,255,255,0.5)",textAlign:"center",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{player.club?player.club.split("(")[0].trim():PL[player.pos]}</div>
                     </div>
                   </div>
                 );
@@ -894,22 +803,17 @@ function AlbumTab({t}) {
     );
   }
 
-  const filteredTeams = gf==="ALL"?TEAMS:TEAMS.filter(t2=>t2.group===gf);
-  return (
+  const filteredTeams=gf==="ALL"?TEAMS:TEAMS.filter(t2=>t2.group===gf);
+  return(
     <div style={{padding:16}}>
-      <Sec icon="🃏" title={t("Album Panini · Mundial 2026","Panini Album · World Cup 2026")} />
+      <Sec icon="🃏" title={t("Álbum Panini · FIFA 2026","Panini Album · FIFA 2026")}/>
+      <div style={{fontSize:10,color:C.gray,marginBottom:10,textAlign:"center"}}>🗄️ {t("1,248 jugadores · 48 selecciones · Supabase","1,248 players · 48 teams · Supabase")}</div>
       <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:4}}>
-        {groups.map(g=>(
-          <button key={g} onClick={()=>setGf(g)}
-            style={{flexShrink:0,padding:"4px 10px",borderRadius:16,border:`1px solid ${gf===g?C.gold:C.grayDark}`,background:gf===g?C.goldDim:C.bgCard,color:gf===g?C.gold:C.gray,fontSize:11,cursor:"pointer",fontWeight:gf===g?700:400}}>
-            {g==="ALL"?t("Todos","All"):`G${g}`}
-          </button>
-        ))}
+        {groups.map(g=><button key={g} onClick={()=>setGf(g)} style={{flexShrink:0,padding:"4px 10px",borderRadius:16,border:`1px solid ${gf===g?C.gold:C.grayDark}`,background:gf===g?C.goldDim:C.bgCard,color:gf===g?C.gold:C.gray,fontSize:11,cursor:"pointer",fontWeight:gf===g?700:400}}>{g==="ALL"?t("Todos","All"):`G${g}`}</button>)}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:10}}>
         {filteredTeams.map(team=>{
           const cols=COLORS[team.name]||["#1D3D8F","#FFD700"];
-          const hp=!!(PLAYERS[team.name]?.players?.length);
           return(
             <div key={team.name} onClick={()=>setSelTeam(team)} style={{cursor:"pointer",borderRadius:14,overflow:"hidden",border:"1px solid rgba(255,255,255,0.08)",boxShadow:"0 4px 16px rgba(0,0,0,0.4)"}}>
               <div style={{background:`linear-gradient(135deg,${cols[0]},${cols[1]})`,padding:"14px 14px 10px",position:"relative",overflow:"hidden"}}>
@@ -919,7 +823,7 @@ function AlbumTab({t}) {
               </div>
               <div style={{background:"rgba(0,0,0,0.8)",padding:"6px 10px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div style={{fontSize:10,color:"rgba(255,255,255,0.4)"}}>G{team.group}</div>
-                <div style={{fontSize:10,color:hp?C.gold:C.gray}}>{hp?PLAYERS[team.name].players.length+" jug":"Ver"}</div>
+                <div style={{fontSize:10,color:C.gold}}>26 ⚽</div>
               </div>
             </div>
           );
@@ -929,79 +833,186 @@ function AlbumTab({t}) {
   );
 }
 
-function AITab({t, lang}) {
-  const [msgs, setMsgs] = useState([{role:"assistant",content:lang==="es"?"Hola! Soy tu asistente del Mundial 2026. En que te ayudo?":"Hello! I'm your World Cup 2026 assistant. How can I help?"}]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const endRef = useRef(null);
-  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+// ─── BRACKET ───────────────────────────────────────────────────────────────────
+function BracketTab({t}){
+  const [bracket,setBracket]=useState(()=>{
+    try{const s=localStorage.getItem("wc26_bracket");return s?JSON.parse(s):null;}catch(e){return null;}
+  });
+  const [editMatch,setEditMatch]=useState(null);
+  const [h,setH]=useState("");const [a,setA]=useState("");
 
-  const send = async(text)=>{
-    const msg=text||input.trim();
-    if(!msg||loading) return;
-    setInput("");
-    const newMsgs=[...msgs,{role:"user",content:msg}];
-    setMsgs(newMsgs);
-    setLoading(true);
+  const rounds=[
+    {id:"r32",name:t("Ronda de 32","Round of 32"),matches:16},
+    {id:"r16",name:t("Octavos","Round of 16"),matches:8},
+    {id:"qf",name:t("Cuartos","Quarterfinals"),matches:4},
+    {id:"sf",name:t("Semifinales","Semifinals"),matches:2},
+    {id:"final",name:t("Final","Final"),matches:1},
+  ];
+
+  const [activeRound,setActiveRound]=useState("r32");
+
+  const initBracket=()=>{
+    const b={};
+    rounds.forEach(r=>{
+      b[r.id]=Array.from({length:r.matches},(_,i)=>({id:`${r.id}_${i}`,home:"TBD",away:"TBD",hf:"🏳️",af:"🏳️",hs:null,as:null}));
+    });
+    // Pre-fill R32 with group winners
+    const groupPairs=[
+      ["A","B"],["C","D"],["E","F"],["G","H"],["I","J"],["K","L"],
+      ["A","C"],["B","D"],["E","G"],["F","H"],["I","K"],["J","L"],
+      ["A","D"],["B","C"],["E","H"],["F","G"]
+    ];
+    b["r32"]=groupPairs.map((pair,i)=>({
+      id:`r32_${i}`,
+      home:`1er Grupo ${pair[0]}`,away:`2do Grupo ${pair[1]}`,
+      hf:"🏳️",af:"🏳️",hs:null,as:null
+    }));
+    setBracket(b);
+    try{localStorage.setItem("wc26_bracket",JSON.stringify(b));}catch(e){}
+  };
+
+  const saveResult=()=>{
+    const hs=parseInt(h),as2=parseInt(a);
+    if(isNaN(hs)||isNaN(as2)||!editMatch||!bracket)return;
+    const newB={...bracket};
+    const [round,idx]=editMatch.split("_").reduce((acc,v,i)=>i===0?[v,null]:[acc[0],acc[1]===null?parseInt(v):acc[1]],[null,null]);
+    if(newB[round]&&newB[round][idx]){
+      newB[round][idx]={...newB[round][idx],hs,as:as2};
+    }
+    setBracket(newB);
+    try{localStorage.setItem("wc26_bracket",JSON.stringify(newB));}catch(e){}
+    setEditMatch(null);setH("");setA("");
+  };
+
+  if(!bracket){
+    return(
+      <div style={{padding:16,textAlign:"center"}}>
+        <Sec icon="🏆" title={t("Bracket Eliminatorias","Knockout Bracket")}/>
+        <div style={{fontSize:64,marginBottom:16}}>🏆</div>
+        <div style={{fontSize:15,fontWeight:700,color:C.white,marginBottom:8}}>{t("Bracket del Mundial 2026","World Cup 2026 Bracket")}</div>
+        <div style={{fontSize:12,color:C.gray,marginBottom:24,lineHeight:1.8}}>
+          {t("Ronda de 32 → Octavos → Cuartos → Semifinales → Final","Round of 32 → R16 → QF → SF → Final")}
+        </div>
+        <button onClick={initBracket} style={{padding:"14px 32px",background:`linear-gradient(135deg,${C.gold},#FFA500)`,border:"none",borderRadius:14,color:"#000",fontSize:15,fontWeight:900,cursor:"pointer"}}>
+          🏆 {t("Iniciar Bracket","Start Bracket")}
+        </button>
+      </div>
+    );
+  }
+
+  const currentMatches=bracket[activeRound]||[];
+
+  return(
+    <div style={{padding:16}}>
+      <Sec icon="🏆" title={t("Bracket Eliminatorias","Knockout Bracket")}/>
+      <div style={{display:"flex",gap:5,marginBottom:14,overflowX:"auto",paddingBottom:4}}>
+        {rounds.map(r=>(
+          <button key={r.id} onClick={()=>setActiveRound(r.id)} style={{flexShrink:0,padding:"5px 10px",borderRadius:16,border:`1px solid ${activeRound===r.id?C.gold:C.grayDark}`,background:activeRound===r.id?C.goldDim:C.bgCard,color:activeRound===r.id?C.gold:C.gray,fontSize:10,cursor:"pointer",fontWeight:activeRound===r.id?700:400,whiteSpace:"nowrap"}}>
+            {r.name}
+          </button>
+        ))}
+      </div>
+
+      {editMatch&&(
+        <div style={{background:C.bgCard,borderRadius:14,padding:14,marginBottom:12,border:`1px solid ${C.goldBorder}`}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.white,marginBottom:10}}>✏️ {t("Registrar resultado","Add result")}</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:10,marginBottom:10}}>
+            <input type="number" min="0" max="20" value={h} onChange={e=>setH(e.target.value)} placeholder="0" style={{width:52,textAlign:"center",background:C.grayDark,border:`2px solid ${C.gold}`,borderRadius:10,padding:"8px 4px",color:C.white,fontSize:22,fontWeight:900,outline:"none"}}/>
+            <div style={{fontSize:16,color:C.gray}}>-</div>
+            <input type="number" min="0" max="20" value={a} onChange={e=>setA(e.target.value)} placeholder="0" style={{width:52,textAlign:"center",background:C.grayDark,border:`2px solid ${C.gold}`,borderRadius:10,padding:"8px 4px",color:C.white,fontSize:22,fontWeight:900,outline:"none"}}/>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={saveResult} style={{flex:1,padding:"9px",background:`linear-gradient(135deg,${C.gold},#FFA500)`,border:"none",borderRadius:8,color:"#000",fontSize:13,fontWeight:800,cursor:"pointer"}}>✅ {t("Guardar","Save")}</button>
+            <button onClick={()=>{setEditMatch(null);setH("");setA("");}} style={{flex:1,padding:"9px",background:"transparent",border:`1px solid ${C.grayDark}`,borderRadius:8,color:C.gray,fontSize:12,cursor:"pointer"}}>{t("Cancelar","Cancel")}</button>
+          </div>
+        </div>
+      )}
+
+      {currentMatches.map((m,i)=>{
+        const hasRes=m.hs!==null&&m.as!==null;
+        const winner=hasRes?(m.hs>m.as?m.home:m.as>m.hs?m.away:"Penales"):"";
+        return(
+          <div key={m.id} style={{background:C.bgCard,borderRadius:14,padding:"12px 14px",marginBottom:10,border:`1px solid ${hasRes?C.green:C.grayDark}`}}>
+            <div style={{fontSize:10,color:C.gray,marginBottom:8}}>{rounds.find(r=>r.id===activeRound)?.name} · {t("Partido","Match")} {i+1}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{flex:1,textAlign:"center"}}>
+                <div style={{fontSize:22,marginBottom:3}}>{m.hf}</div>
+                <div style={{fontSize:12,fontWeight:700,color:winner===m.home?C.gold:C.white,lineHeight:1.3}}>{m.home}</div>
+                {winner===m.home&&<div style={{fontSize:9,color:C.gold,marginTop:2}}>🏆 {t("Ganador","Winner")}</div>}
+              </div>
+              <div style={{textAlign:"center",minWidth:60}}>
+                {hasRes?<div style={{fontSize:18,fontWeight:900,color:C.gold,background:C.goldDim,padding:"4px 10px",borderRadius:10,border:`1px solid ${C.goldBorder}`}}>{m.hs}-{m.as}</div>:<div style={{fontSize:13,color:C.gray,fontWeight:700}}>VS</div>}
+              </div>
+              <div style={{flex:1,textAlign:"center"}}>
+                <div style={{fontSize:22,marginBottom:3}}>{m.af}</div>
+                <div style={{fontSize:12,fontWeight:700,color:winner===m.away?C.gold:C.white,lineHeight:1.3}}>{m.away}</div>
+                {winner===m.away&&<div style={{fontSize:9,color:C.gold,marginTop:2}}>🏆 {t("Ganador","Winner")}</div>}
+              </div>
+            </div>
+            <button onClick={()=>setEditMatch(m.id)} style={{width:"100%",marginTop:8,padding:"6px",background:"rgba(255,255,255,0.02)",border:`1px solid ${C.grayDark}`,borderRadius:8,color:C.gray,fontSize:11,cursor:"pointer"}}>
+              {hasRes?t("Editar resultado","Edit result"):t("Agregar resultado","Add result")}
+            </button>
+          </div>
+        );
+      })}
+      <button onClick={()=>{if(confirm(t("Reiniciar bracket?","Reset bracket?")))setBracket(null);try{localStorage.removeItem("wc26_bracket");}catch(e){}}} style={{width:"100%",marginTop:4,padding:"8px",background:"rgba(230,57,70,0.08)",border:"1px solid rgba(230,57,70,0.2)",borderRadius:10,color:"#FF6B7A",fontSize:11,cursor:"pointer"}}>
+        🔄 {t("Reiniciar bracket","Reset bracket")}
+      </button>
+    </div>
+  );
+}
+
+// ─── AI ────────────────────────────────────────────────────────────────────────
+function AITab({t,lang}){
+  const [msgs,setMsgs]=useState([{role:"assistant",content:lang==="es"?"Hola! Soy tu asistente del Mundial 2026. En que te ayudo?":"Hello! I'm your World Cup 2026 assistant. How can I help?"}]);
+  const [input,setInput]=useState("");const [loading,setLoading]=useState(false);
+  const endRef=useRef(null);
+  useEffect(()=>{endRef.current?.scrollIntoView({behavior:"smooth"});},[msgs]);
+  const send=async(text)=>{
+    const msg=text||input.trim();if(!msg||loading)return;
+    setInput("");const newMsgs=[...msgs,{role:"user",content:msg}];setMsgs(newMsgs);setLoading(true);
     try{
       const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
         model:"claude-sonnet-4-20250514",max_tokens:1000,
-        system:`Eres experto en futbol y asistente del Mundial 2026 en Mexico, USA, Canada. Responde en ${lang==="es"?"espanol":"English"} de forma concisa con emojis. Max 3 parrafos.`,
+        system:`Eres experto en futbol y asistente del Mundial 2026 en Mexico, USA, Canada. Conoces todos los jugadores y sus clubes actuales. Responde en ${lang==="es"?"espanol":"English"} de forma concisa y apasionada con emojis. Max 3 parrafos.`,
         messages:newMsgs.map(m=>({role:m.role,content:m.content}))
       })});
       const d=await r.json();
       setMsgs(prev=>[...prev,{role:"assistant",content:d.content?.[0]?.text||t("Error","Error")}]);
-    }catch(e){
-      setMsgs(prev=>[...prev,{role:"assistant",content:t("Error de conexion","Connection error")}]);
-    }
+    }catch(e){setMsgs(prev=>[...prev,{role:"assistant",content:t("Error de conexion","Connection error")}]);}
     setLoading(false);
   };
-
   return(
     <div style={{display:"flex",flexDirection:"column",height:"calc(100vh - 140px)"}}>
       <div style={{padding:"12px 16px 0"}}>
         <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
           <div style={{width:36,height:36,borderRadius:"50%",background:"linear-gradient(135deg,#1D3D8F,#4A7FE8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>🤖</div>
-          <div>
-            <div style={{fontSize:14,fontWeight:800,color:C.white}}>Mundial AI</div>
-            <div style={{fontSize:10,color:C.green}}>Online · Claude</div>
-          </div>
+          <div><div style={{fontSize:14,fontWeight:800,color:C.white}}>Mundial AI</div><div style={{fontSize:10,color:C.green}}>Online · Claude</div></div>
           <button onClick={()=>setMsgs([{role:"assistant",content:t("Chat reiniciado","Chat reset")}])} style={{marginLeft:"auto",background:C.grayDark,border:"none",color:C.gray,padding:"4px 10px",borderRadius:16,fontSize:11,cursor:"pointer"}}>Reset</button>
         </div>
         <div style={{display:"flex",gap:6,overflowX:"auto",paddingBottom:8}}>
-          {TIPS.map((s,i)=>(
-            <button key={i} onClick={()=>send(s)} style={{flexShrink:0,padding:"5px 10px",borderRadius:20,border:`1px solid ${C.grayDark}`,background:C.bgCard,color:C.gray,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>{s}</button>
-          ))}
+          {TIPS.map((s,i)=><button key={i} onClick={()=>send(s)} style={{flexShrink:0,padding:"5px 10px",borderRadius:20,border:`1px solid ${C.grayDark}`,background:C.bgCard,color:C.gray,fontSize:10,cursor:"pointer",whiteSpace:"nowrap"}}>{s}</button>)}
         </div>
       </div>
       <div style={{flex:1,overflowY:"auto",padding:"0 16px"}}>
         {msgs.map((msg,i)=>(
           <div key={i} style={{marginBottom:12,display:"flex",flexDirection:"column",alignItems:msg.role==="user"?"flex-end":"flex-start"}}>
             {msg.role==="assistant"&&<div style={{fontSize:18,marginBottom:4}}>🤖</div>}
-            <div style={{maxWidth:"85%",background:msg.role==="user"?"linear-gradient(135deg,#1D3D8F,#4A7FE8)":C.bgCard,border:msg.role==="assistant"?`1px solid ${C.grayDark}`:"none",borderRadius:msg.role==="user"?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",fontSize:13,color:C.white,lineHeight:1.6,whiteSpace:"pre-wrap"}}>
-              {msg.content}
-            </div>
+            <div style={{maxWidth:"85%",background:msg.role==="user"?"linear-gradient(135deg,#1D3D8F,#4A7FE8)":C.bgCard,border:msg.role==="assistant"?`1px solid ${C.grayDark}`:"none",borderRadius:msg.role==="user"?"18px 18px 4px 18px":"18px 18px 18px 4px",padding:"10px 14px",fontSize:13,color:C.white,lineHeight:1.6,whiteSpace:"pre-wrap"}}>{msg.content}</div>
           </div>
         ))}
-        {loading&&(
-          <div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:12}}>
-            <div style={{fontSize:18}}>🤖</div>
-            <div style={{background:C.bgCard,border:`1px solid ${C.grayDark}`,borderRadius:"18px 18px 18px 4px",padding:"12px 16px",display:"flex",gap:4,alignItems:"center"}}>
-              {[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:C.blueLight,animation:`pulse 1.2s ease ${i*0.2}s infinite`}} />)}
-            </div>
+        {loading&&(<div style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:12}}>
+          <div style={{fontSize:18}}>🤖</div>
+          <div style={{background:C.bgCard,border:`1px solid ${C.grayDark}`,borderRadius:"18px 18px 18px 4px",padding:"12px 16px",display:"flex",gap:4,alignItems:"center"}}>
+            {[0,1,2].map(i=><div key={i} style={{width:7,height:7,borderRadius:"50%",background:C.blueLight,animation:`pulse 1.2s ease ${i*0.2}s infinite`}}/>)}
           </div>
-        )}
-        <div ref={endRef} />
+        </div>)}
+        <div ref={endRef}/>
       </div>
       <div style={{padding:"10px 16px 14px",background:C.bg,borderTop:`1px solid ${C.grayDark}`}}>
         <div style={{display:"flex",gap:8,alignItems:"flex-end"}}>
-          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()}
-            placeholder={t("Pregunta sobre el Mundial...","Ask about the World Cup...")}
-            style={{flex:1,background:C.bgCard,border:`1px solid ${C.grayDark}`,borderRadius:20,padding:"10px 16px",color:C.white,fontSize:13,outline:"none"}} />
-          <button onClick={()=>send()} disabled={!input.trim()||loading}
-            style={{width:42,height:42,borderRadius:"50%",background:input.trim()&&!loading?"linear-gradient(135deg,#1D3D8F,#4A7FE8)":C.grayDark,border:"none",cursor:input.trim()&&!loading?"pointer":"default",fontSize:18,flexShrink:0}}>
-            {loading?"...":">"}
-          </button>
+          <input value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!e.shiftKey&&send()} placeholder={t("Pregunta sobre el Mundial...","Ask about the World Cup...")} style={{flex:1,background:C.bgCard,border:`1px solid ${C.grayDark}`,borderRadius:20,padding:"10px 16px",color:C.white,fontSize:13,outline:"none"}}/>
+          <button onClick={()=>send()} disabled={!input.trim()||loading} style={{width:42,height:42,borderRadius:"50%",background:input.trim()&&!loading?"linear-gradient(135deg,#1D3D8F,#4A7FE8)":C.grayDark,border:"none",cursor:input.trim()&&!loading?"pointer":"default",fontSize:18,flexShrink:0}}>{loading?"...":">"}</button>
         </div>
         <div style={{fontSize:9,color:C.gray,textAlign:"center",marginTop:6}}>Powered by Claude · Anthropic</div>
       </div>
@@ -1009,71 +1020,10 @@ function AITab({t, lang}) {
   );
 }
 
-function SettingsTab({t, lang, setLang, notifs, setNotifs, user}) {
-  const Toggle=({icon,title,sub,val,onChange})=>(
-    <div style={{background:C.bgCard,borderRadius:12,padding:"12px 14px",marginBottom:8,border:`1px solid ${C.grayDark}`,display:"flex",alignItems:"center",gap:10}}>
-      <span style={{fontSize:20}}>{icon}</span>
-      <div style={{flex:1}}>
-        <div style={{fontSize:13,fontWeight:600}}>{title}</div>
-        <div style={{fontSize:11,color:C.gray,marginTop:1}}>{sub}</div>
-      </div>
-      <button onClick={()=>onChange(!val)} style={{width:44,height:24,borderRadius:12,background:val?C.gold:C.grayDark,border:"none",cursor:"pointer",position:"relative",transition:"background 0.3s",flexShrink:0}}>
-        <div style={{width:18,height:18,borderRadius:"50%",background:"white",position:"absolute",top:3,left:val?23:3,transition:"left 0.3s"}} />
-      </button>
-    </div>
-  );
-  return(
-    <div style={{padding:16}}>
-      <Sec icon="⚙️" title={t("Ajustes","Settings")} />
-      {user&&(
-        <div style={{background:"linear-gradient(135deg,#1a2f6e,#0a1428)",borderRadius:12,padding:14,marginBottom:16,border:`1px solid ${C.goldBorder}`,display:"flex",alignItems:"center",gap:12}}>
-          <div style={{fontSize:36}}>{user.flag}</div>
-          <div>
-            <div style={{fontSize:16,fontWeight:700}}>{user.name}</div>
-            <div style={{fontSize:11,color:C.gray}}>@{user.username}</div>
-            <div style={{fontSize:10,color:C.green,marginTop:2}}>{t("Guardado localmente","Saved locally")}</div>
-          </div>
-        </div>
-      )}
-      <div style={{fontSize:10,color:C.gold,letterSpacing:2,fontWeight:700,marginBottom:6}}>{t("IDIOMA","LANGUAGE")}</div>
-      <div style={{display:"flex",gap:8,marginBottom:14}}>
-        {[["es","Espanol"],["en","English"]].map(([l,label])=>(
-          <button key={l} onClick={()=>setLang(l)}
-            style={{flex:1,padding:"9px",borderRadius:10,border:`1px solid ${lang===l?C.gold:C.grayDark}`,background:lang===l?C.goldDim:C.bgCard,color:lang===l?C.gold:C.gray,fontSize:13,cursor:"pointer",fontWeight:lang===l?700:400}}>
-            {label}
-          </button>
-        ))}
-      </div>
-      <div style={{fontSize:10,color:C.gold,letterSpacing:2,fontWeight:700,marginBottom:6}}>{t("NOTIFICACIONES","NOTIFICATIONS")}</div>
-      <Toggle icon="🔔" title={t("Alertas de partidos","Match alerts")} sub={t("1 hora antes del partido","1 hour before kickoff")} val={notifs} onChange={setNotifs} />
-      <div style={{background:C.goldDim,borderRadius:12,padding:14,marginTop:8,border:`1px solid ${C.goldBorder}`,textAlign:"center"}}>
-        <div style={{fontSize:14,fontWeight:700,color:C.gold}}>🏆 Mundial 2026</div>
-        <div style={{fontSize:11,color:C.gray,marginTop:4}}>Jun 11 - Jul 19 · 48 {t("equipos","teams")} · 104 {t("partidos","matches")}</div>
-        <div style={{fontSize:10,color:C.gray,marginTop:2}}>v5.0 · Made with Claude</div>
-      </div>
-      {user&&(
-        <button onClick={()=>{
-          try{
-            localStorage.removeItem("wc26_user");
-            localStorage.removeItem("wc26_m");
-            localStorage.removeItem("wc26_p");
-            localStorage.removeItem("wc26_r");
-          }catch(e){}
-          window.location.reload();
-        }} style={{width:"100%",marginTop:10,padding:"9px",background:"rgba(230,57,70,0.1)",border:"1px solid rgba(230,57,70,0.3)",borderRadius:10,color:"#FF6B7A",fontSize:13,cursor:"pointer",fontWeight:600}}>
-          🚪 {user?.isGuest ? t("Iniciar sesion / Registrarse","Sign in / Register") : t("Cerrar sesion","Sign out")}
-        </button>
-      )}
-    </div>
-  );
-}
-
-function Sec({icon, title}) {
-  return(
-    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,marginTop:8}}>
-      <span style={{fontSize:14}}>{icon}</span>
-      <span style={{fontSize:13,fontWeight:800,color:C.white}}>{title}</span>
-      <div style={{flex:1,height:1,background:"rgba(255,255,255,0.05)"}} />
-    </div>
-  );
+function Sec({icon,title}){
+  return(<div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10,marginTop:8}}>
+    <span style={{fontSize:14}}>{icon}</span>
+    <span style={{fontSize:13,fontWeight:800,color:C.white}}>{title}</span>
+    <div style={{flex:1,height:1,background:"rgba(255,255,255,0.05)"}}/>
+  </div>);
 }
