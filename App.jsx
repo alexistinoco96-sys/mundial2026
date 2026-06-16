@@ -221,6 +221,7 @@ export default function App() {
     {id:"calendar",icon:"📅",label:t("Partidos","Matches")},
     {id:"groups",icon:"👥",label:t("Grupos","Groups")},
     {id:"album",icon:"🃏",label:t("Álbum","Album")},
+    {id:"stats",icon:"📊",label:t("Stats","Stats")},
     {id:"bracket",icon:"🏆",label:"Bracket"},
     {id:"ai",icon:"🤖",label:"IA"},
   ];
@@ -258,6 +259,7 @@ export default function App() {
         {tab==="calendar"&&<CalendarTab t={t} matches={matches} preds={preds} onPred={handlePred} onResult={handleResult}/>}
         {tab==="groups"&&<GroupsTab t={t} rooms={rooms} setRooms={saveR} user={user} preds={preds} matches={matches}/>}
         {tab==="album"&&<AlbumTab t={t}/>}
+        {tab==="stats"&&<StatsTab t={t}/>}
         {tab==="bracket"&&<BracketTab t={t}/>}
         {tab==="ai"&&<AITab t={t} lang={lang}/>}
       </div>
@@ -834,6 +836,144 @@ function AlbumTab({t}){
 }
 
 // ─── BRACKET ───────────────────────────────────────────────────────────────────
+function StatsTab({t}){
+  const [active,setActive]=useState("goals");
+  const [data,setData]=useState([]);
+  const [loading,setLoading]=useState(true);
+
+  const tabs=[
+    {id:"goals",icon:"⚽",label:t("Goleadores","Top Scorers")},
+    {id:"assists",icon:"🎯",label:t("Asistencias","Assists")},
+    {id:"clean_sheets",icon:"🧤",label:t("Portería Imbatible","Clean Sheets")},
+    {id:"yellow_cards",icon:"🟨",label:t("Tarjetas","Cards")},
+  ];
+
+  useEffect(()=>{
+    setLoading(true);
+    const col=active==="yellow_cards"?"yellow_cards,red_cards":active;
+    fetch(`${SB_URL}/rest/v1/tournament_stats?select=player_name,team,flag,pos,club,goals,assists,clean_sheets,goals_conceded,yellow_cards,red_cards,matches_played&order=${active}.desc&limit=20`,{
+      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
+    })
+    .then(r=>r.json())
+    .then(d=>{if(Array.isArray(d))setData(d);})
+    .catch(()=>{})
+    .finally(()=>setLoading(false));
+  },[active]);
+
+  const getVal=(p)=>{
+    if(active==="goals") return {val:p.goals,icon:"⚽"};
+    if(active==="assists") return {val:p.assists,icon:"🎯"};
+    if(active==="clean_sheets") return {val:p.clean_sheets,icon:"🛡️"};
+    if(active==="yellow_cards") return {val:p.yellow_cards,icon:"🟨",extra:p.red_cards>0?` +${p.red_cards}🟥`:""};
+    return {val:0,icon:""};
+  };
+
+  const filtered=data.filter(p=>getVal(p).val>0);
+  const posEmoji={GK:"🧤",DEF:"🛡️",MID:"⚙️",FWD:"⚽"};
+  const medals=["🥇","🥈","🥉"];
+
+  return(
+    <div style={{padding:16}}>
+      <Sec icon="📊" title={t("Estadísticas del Torneo","Tournament Stats")}/>
+      <div style={{fontSize:10,color:C.gray,textAlign:"center",marginBottom:12}}>
+        🏆 FIFA Copa Mundial 2026™ · {t("Actualización en tiempo real","Live updates")}
+      </div>
+
+      {/* Sub-tabs */}
+      <div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
+        {tabs.map(tb=>(
+          <button key={tb.id} onClick={()=>setActive(tb.id)}
+            style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:20,
+              border:`1px solid ${active===tb.id?C.gold:C.grayDark}`,
+              background:active===tb.id?C.goldDim:C.bgCard,
+              color:active===tb.id?C.gold:C.gray,
+              fontSize:11,cursor:"pointer",fontWeight:active===tb.id?700:400}}>
+            <span>{tb.icon}</span><span>{tb.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Loading */}
+      {loading&&(
+        <div style={{textAlign:"center",padding:40,color:C.gray}}>
+          <div style={{fontSize:32,marginBottom:8}}>⏳</div>
+          <div style={{fontSize:12}}>{t("Cargando estadísticas...","Loading stats...")}</div>
+        </div>
+      )}
+
+      {/* Lista */}
+      {!loading&&filtered.length===0&&(
+        <div style={{textAlign:"center",padding:40,color:C.gray}}>
+          <div style={{fontSize:32,marginBottom:8}}>📋</div>
+          <div style={{fontSize:12}}>{t("Sin datos aún. El torneo está comenzando.","No data yet. Tournament is just starting.")}</div>
+        </div>
+      )}
+
+      {!loading&&filtered.map((p,i)=>{
+        const {val,icon,extra=""}=getVal(p);
+        const isTop3=i<3;
+        return(
+          <div key={i} style={{
+            display:"flex",alignItems:"center",gap:12,
+            padding:"12px 14px",marginBottom:8,
+            borderRadius:14,
+            background:isTop3?`linear-gradient(135deg,${C.bgCard},${C.grayDark})`:`${C.bgCard}`,
+            border:`1px solid ${isTop3?C.goldBorder:C.grayDark}`,
+            boxShadow:isTop3?"0 4px 16px rgba(255,215,0,0.08)":"none"
+          }}>
+            {/* Posición */}
+            <div style={{width:28,textAlign:"center",fontSize:isTop3?20:14,fontWeight:900,
+              color:isTop3?C.gold:C.gray,flexShrink:0}}>
+              {i<3?medals[i]:i+1}
+            </div>
+
+            {/* Flag + emoji posición */}
+            <div style={{position:"relative",flexShrink:0}}>
+              <div style={{fontSize:28}}>{p.flag}</div>
+              <div style={{position:"absolute",bottom:-2,right:-4,fontSize:10,
+                background:C.bgCard,borderRadius:4,padding:"0 2px"}}>{posEmoji[p.pos]}</div>
+            </div>
+
+            {/* Info jugador */}
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:14,fontWeight:800,color:C.white,
+                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {p.player_name}
+              </div>
+              <div style={{fontSize:10,color:C.gray,marginTop:2,
+                overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {p.team} · {p.club?p.club.split("(")[0].trim():""}
+              </div>
+              <div style={{fontSize:9,color:C.gray,marginTop:1}}>
+                {p.matches_played} {t("partidos","matches")}
+              </div>
+            </div>
+
+            {/* Valor */}
+            <div style={{textAlign:"center",flexShrink:0}}>
+              <div style={{fontSize:26,fontWeight:900,
+                color:isTop3?C.gold:C.white,lineHeight:1}}>
+                {val}
+              </div>
+              <div style={{fontSize:14}}>{icon}{extra}</div>
+            </div>
+          </div>
+        );
+      })}
+
+      {!loading&&filtered.length>0&&(
+        <div style={{textAlign:"center",marginTop:12,padding:"8px",
+          background:C.bgCard,borderRadius:10,
+          border:`1px solid ${C.grayDark}`}}>
+          <div style={{fontSize:10,color:C.gray}}>
+            🔄 {t("Datos actualizados manualmente por el administrador","Data manually updated by admin")}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BracketTab({t}){
   const [bracket,setBracket]=useState(()=>{
     try{const s=localStorage.getItem("wc26_bracket");return s?JSON.parse(s):null;}catch(e){return null;}
