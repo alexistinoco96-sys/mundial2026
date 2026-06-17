@@ -914,39 +914,30 @@ function StatsTab({t}){
       return;
     }
 
-    // Goles y Amarillas → API-Football directo
-    fetchFromAPI(endpoint)
-    .then(d=>{
-      if(d.response&&Array.isArray(d.response)&&d.response.length>0){
-        setData(d.response);
+    // Goles y Amarillas → Supabase (completo y actualizado)
+    const col=active==="goals"?"goals":"yellow_cards";
+    fetch(`${SB_URL}/rest/v1/tournament_stats?select=player_name,team,flag,pos,club,goals,yellow_cards,matches_played&${col}=gt.0&order=${col}.desc&limit=50`,{
+      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
+    })
+    .then(r=>r.json())
+    .then(sb=>{
+      if(Array.isArray(sb)&&sb.length>0){
+        setData(sb.map(p=>({
+          player:{name:p.player_name},
+          statistics:[{
+            team:{name:p.team},
+            goals:{total:p.goals||0},
+            cards:{yellow:p.yellow_cards||0},
+            games:{appearences:p.matches_played||0},
+            flag:p.flag,
+            club:p.club,
+            pos:p.pos
+          }]
+        })));
         setLastUpdate(new Date().toLocaleTimeString());
-      } else {
-        // Fallback a Supabase si API no devuelve datos
-        const col=active==="goals"?"goals":"yellow_cards";
-        return fetch(`${SB_URL}/rest/v1/tournament_stats?select=player_name,team,flag,pos,club,goals,yellow_cards,matches_played&order=${col}.desc&limit=20`,{
-          headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
-        })
-        .then(r=>r.json())
-        .then(sb=>{
-          if(Array.isArray(sb)&&sb.length>0){
-            setData(sb.map(p=>({
-              player:{name:p.player_name},
-              statistics:[{
-                team:{name:p.team},
-                goals:{total:p.goals||0},
-                cards:{yellow:p.yellow_cards||0},
-                games:{appearences:p.matches_played||0},
-                flag:p.flag,
-                club:p.club,
-                pos:p.pos
-              }]
-            })));
-            setLastUpdate(new Date().toLocaleTimeString());
-          }
-        });
       }
     })
-    .catch(()=>setError("Error conectando con API-Football"))
+    .catch(()=>setError("Error cargando datos"))
     .finally(()=>setLoading(false));
   },[active]);
 
