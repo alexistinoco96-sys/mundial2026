@@ -849,11 +849,8 @@ function StatsTab({t}){
 
   const tabs=[
     {id:"goals",icon:"⚽",label:t("Goleadores","Top Scorers")},
-    {id:"assists",icon:"🎯",label:t("Asistencias","Assists")},
-    {id:"clean_sheets",icon:"🧤",label:t("Portería Imbatible","Clean Sheets")},
     {id:"yellow_cards",icon:"🟨",label:t("Amarillas","Yellow")},
-    {id:"red_cards",icon:"🟥",label:t("Rojas","Red")},
-    {id:"rating",icon:"⭐",label:t("Rating","Rating")},
+    {id:"clean_sheets",icon:"🧤",label:t("Portería Imbatible","Clean Sheets")},
   ];
 
   const fetchFromAPI = (endpoint) => {
@@ -869,61 +866,46 @@ function StatsTab({t}){
 
     let endpoint = "";
     if(active==="goals") endpoint="players/topscorers?";
-    else if(active==="assists") endpoint="players/topassists?";
     else if(active==="yellow_cards") endpoint="players/topyellowcards?";
-    else if(active==="red_cards") endpoint="players/topredcards?";
-    else if(active==="rating") endpoint="players/topscorers?";
-    else if(active==="clean_sheets") endpoint="players/topscorers?"; // usamos goalkeepers de Supabase
+    else if(active==="clean_sheets") endpoint="clean_sheets"; // Supabase
 
-    // Para portería imbatible usamos Supabase (no hay endpoint directo en API-Football free)
+    // Portería imbatible → Supabase
     if(active==="clean_sheets"){
       fetch(`${SB_URL}/rest/v1/tournament_stats?select=player_name,team,flag,pos,club,clean_sheets,goals_conceded,matches_played&pos=eq.GK&order=clean_sheets.desc&limit=20`,{
         headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
       })
       .then(r=>r.json())
       .then(d=>{
-        if(Array.isArray(d)){
-          setData(d.map(p=>({
-            player:{name:p.player_name,nationality:p.team},
-            statistics:[{
-              team:{name:p.team},
-              goals:{total:null,assists:null,conceded:p.goals_conceded},
-              cards:{yellow:null,red:null},
-              games:{appearences:p.matches_played,lineups:p.matches_played},
-              clean_sheet: p.clean_sheets,
-              flag: p.flag,
-              club: p.club,
-              pos: p.pos
-            }]
-          })));
-          setLastUpdate(new Date().toLocaleTimeString());
-        }
+        if(Array.isArray(d)) setData(d);
+        setLastUpdate(new Date().toLocaleTimeString());
       })
-      .catch(()=>setError("Error cargando datos"))
+      .catch(()=>setError("Error cargando porteros"))
       .finally(()=>setLoading(false));
       return;
     }
 
-    // Para goles, asistencias y tarjetas usamos API-Football
+    // Goles y Amarillas → API-Football directo
     fetchFromAPI(endpoint)
     .then(d=>{
-      if(d.errors && Object.keys(d.errors).length>0){
-        // Si hay error de API, caemos a Supabase como respaldo
-        const colMap={"goals":"goals","assists":"assists","yellow_cards":"yellow_cards","red_cards":"red_cards","rating":"goals"};
-        const col=colMap[active]||"goals";
-        return fetch(`${SB_URL}/rest/v1/tournament_stats?select=player_name,team,flag,pos,club,goals,assists,yellow_cards,red_cards,matches_played&order=${col}.desc&limit=20`,{
+      if(d.response&&Array.isArray(d.response)&&d.response.length>0){
+        setData(d.response);
+        setLastUpdate(new Date().toLocaleTimeString());
+      } else {
+        // Fallback a Supabase si API no devuelve datos
+        const col=active==="goals"?"goals":"yellow_cards";
+        return fetch(`${SB_URL}/rest/v1/tournament_stats?select=player_name,team,flag,pos,club,goals,yellow_cards,matches_played&order=${col}.desc&limit=20`,{
           headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
         })
         .then(r=>r.json())
         .then(sb=>{
-          if(Array.isArray(sb)){
+          if(Array.isArray(sb)&&sb.length>0){
             setData(sb.map(p=>({
-              player:{name:p.player_name,nationality:p.team},
+              player:{name:p.player_name},
               statistics:[{
                 team:{name:p.team},
-                goals:{total:p.goals,assists:p.assists,conceded:0},
-                cards:{yellow:p.yellow_cards,red:p.red_cards},
-                games:{appearences:p.matches_played},
+                goals:{total:p.goals||0},
+                cards:{yellow:p.yellow_cards||0},
+                games:{appearences:p.matches_played||0},
                 flag:p.flag,
                 club:p.club,
                 pos:p.pos
@@ -933,10 +915,6 @@ function StatsTab({t}){
           }
         });
       }
-      if(d.response && Array.isArray(d.response)){
-        setData(d.response);
-        setLastUpdate(new Date().toLocaleTimeString());
-      }
     })
     .catch(()=>setError("Error conectando con API-Football"))
     .finally(()=>setLoading(false));
@@ -944,16 +922,10 @@ function StatsTab({t}){
 
   const getVal=(p)=>{
     const s=p.statistics?.[0];
+    if(active==="clean_sheets") return {val:p.clean_sheets||0,icon:"🛡️",sub:`${p.goals_conceded||0} goles recibidos`};
     if(!s) return {val:0,icon:"⚽"};
     if(active==="goals") return {val:s.goals?.total||0,icon:"⚽",sub:s.games?.appearences?`${s.games.appearences} partidos`:""};
-    if(active==="assists") return {val:s.goals?.assists||0,icon:"🎯",sub:s.games?.appearences?`${s.games.appearences} partidos`:""};
-    if(active==="clean_sheets") return {val:s.clean_sheet||0,icon:"🛡️",sub:`${s.goals?.conceded||0} goles recibidos`};
-    if(active==="yellow_cards") return {val:s.cards?.yellow||0,icon:"🟨",sub:s.cards?.red>0?`+${s.cards.red} 🟥 roja`:""};
-    if(active==="red_cards") return {val:s.cards?.red||0,icon:"🟥",sub:s.cards?.yellow>0?`+${s.cards.yellow} 🟨 amarillas`:""};
-    if(active==="rating"){
-      const r=parseFloat(s.games?.rating||0);
-      return {val:r?r.toFixed(1):"-",icon:"⭐",sub:s.games?.appearences?`${s.games.appearences} partidos`:""};
-    }
+    if(active==="yellow_cards") return {val:s.cards?.yellow||0,icon:"🟨",sub:s.games?.appearences?`${s.games.appearences} partidos`:""};
     return {val:0,icon:""};
   };
 
@@ -964,11 +936,7 @@ function StatsTab({t}){
     return flags[p.player?.nationality]||"🏳️";
   };
 
-  const filtered=data.filter(p=>{
-    const v=getVal(p).val;
-    if(active==="rating") return v&&v!=="-"&&parseFloat(v)>0;
-    return Number(v)>0;
-  });
+  const filtered=data.filter(p=>Number(getVal(p).val)>0);
   const medals=["🥇","🥈","🥉"];
   const posEmoji={GK:"🧤",DEF:"🛡️",MID:"⚙️",FWD:"⚽"};
 
