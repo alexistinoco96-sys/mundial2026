@@ -7,6 +7,10 @@ const C = {
 };
 
 const SB_URL = "https://asntocdbpqnawneyszpx.supabase.co";
+const AF_KEY = "a70341b45b99eafecf1871bb317700b3";
+const AF_URL = "https://v3.football.api-sports.io";
+const WC_LEAGUE = 1;
+const WC_SEASON = 2026;
 const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzbnRvY2RicHFuYXduZXlzenB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDAwMjQsImV4cCI6MjA5NjExNjAyNH0.PKBJ6s2zEbETWmzKlqhaQGNMH6yfrlCgbZdZWKZdDjo";
 
 const TEAMS = [
@@ -840,6 +844,8 @@ function StatsTab({t}){
   const [active,setActive]=useState("goals");
   const [data,setData]=useState([]);
   const [loading,setLoading]=useState(true);
+  const [lastUpdate,setLastUpdate]=useState(null);
+  const [error,setError]=useState(null);
 
   const tabs=[
     {id:"goals",icon:"⚽",label:t("Goleadores","Top Scorers")},
@@ -848,43 +854,124 @@ function StatsTab({t}){
     {id:"yellow_cards",icon:"🟨",label:t("Tarjetas","Cards")},
   ];
 
+  const fetchFromAPI = (endpoint) => {
+    return fetch(`${AF_URL}/${endpoint}&league=${WC_LEAGUE}&season=${WC_SEASON}`,{
+      headers:{"x-apisports-key": AF_KEY}
+    }).then(r=>r.json());
+  };
+
   useEffect(()=>{
     setLoading(true);
-    const col=active==="yellow_cards"?"yellow_cards,red_cards":active;
-    fetch(`${SB_URL}/rest/v1/tournament_stats?select=player_name,team,flag,pos,club,goals,assists,clean_sheets,goals_conceded,yellow_cards,red_cards,matches_played&order=${active}.desc&limit=20`,{
-      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
+    setError(null);
+    setData([]);
+
+    let endpoint = "";
+    if(active==="goals") endpoint="players/topscorers?";
+    else if(active==="assists") endpoint="players/topassists?";
+    else if(active==="yellow_cards") endpoint="players/topyellowcards?";
+    else if(active==="clean_sheets") endpoint="players/topscorers?"; // usamos goalkeepers de Supabase
+
+    // Para portería imbatible usamos Supabase (no hay endpoint directo en API-Football free)
+    if(active==="clean_sheets"){
+      fetch(`${SB_URL}/rest/v1/tournament_stats?select=player_name,team,flag,pos,club,clean_sheets,goals_conceded,matches_played&pos=eq.GK&order=clean_sheets.desc&limit=20`,{
+        headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
+      })
+      .then(r=>r.json())
+      .then(d=>{
+        if(Array.isArray(d)){
+          setData(d.map(p=>({
+            player:{name:p.player_name,nationality:p.team},
+            statistics:[{
+              team:{name:p.team},
+              goals:{total:null,assists:null,conceded:p.goals_conceded},
+              cards:{yellow:null,red:null},
+              games:{appearences:p.matches_played,lineups:p.matches_played},
+              clean_sheet: p.clean_sheets,
+              flag: p.flag,
+              club: p.club,
+              pos: p.pos
+            }]
+          })));
+          setLastUpdate(new Date().toLocaleTimeString());
+        }
+      })
+      .catch(()=>setError("Error cargando datos"))
+      .finally(()=>setLoading(false));
+      return;
+    }
+
+    // Para goles, asistencias y tarjetas usamos API-Football
+    fetchFromAPI(endpoint)
+    .then(d=>{
+      if(d.errors && Object.keys(d.errors).length>0){
+        // Si hay error de API, caemos a Supabase como respaldo
+        const col = active==="goals"?"goals":active==="assists"?"assists":"yellow_cards";
+        return fetch(`${SB_URL}/rest/v1/tournament_stats?select=player_name,team,flag,pos,club,goals,assists,yellow_cards,red_cards,matches_played&order=${col}.desc&limit=20`,{
+          headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
+        })
+        .then(r=>r.json())
+        .then(sb=>{
+          if(Array.isArray(sb)){
+            setData(sb.map(p=>({
+              player:{name:p.player_name,nationality:p.team},
+              statistics:[{
+                team:{name:p.team},
+                goals:{total:p.goals,assists:p.assists,conceded:0},
+                cards:{yellow:p.yellow_cards,red:p.red_cards},
+                games:{appearences:p.matches_played},
+                flag:p.flag,
+                club:p.club,
+                pos:p.pos
+              }]
+            })));
+            setLastUpdate(new Date().toLocaleTimeString());
+          }
+        });
+      }
+      if(d.response && Array.isArray(d.response)){
+        setData(d.response);
+        setLastUpdate(new Date().toLocaleTimeString());
+      }
     })
-    .then(r=>r.json())
-    .then(d=>{if(Array.isArray(d))setData(d);})
-    .catch(()=>{})
+    .catch(()=>setError("Error conectando con API-Football"))
     .finally(()=>setLoading(false));
   },[active]);
 
   const getVal=(p)=>{
-    if(active==="goals") return {val:p.goals,icon:"⚽"};
-    if(active==="assists") return {val:p.assists,icon:"🎯"};
-    if(active==="clean_sheets") return {val:p.clean_sheets,icon:"🛡️"};
-    if(active==="yellow_cards") return {val:p.yellow_cards,icon:"🟨",extra:p.red_cards>0?` +${p.red_cards}🟥`:""};
+    const s=p.statistics?.[0];
+    if(!s) return {val:0,icon:"⚽"};
+    if(active==="goals") return {val:s.goals?.total||0,icon:"⚽"};
+    if(active==="assists") return {val:s.goals?.assists||0,icon:"🎯"};
+    if(active==="clean_sheets") return {val:s.clean_sheet||0,icon:"🛡️",sub:`${s.goals?.conceded||0} goles recibidos`};
+    if(active==="yellow_cards") return {val:s.cards?.yellow||0,icon:"🟨",extra:s.cards?.red>0?` +${s.cards.red}🟥`:""};
     return {val:0,icon:""};
   };
 
+  const getFlag=(p)=>{
+    if(p.statistics?.[0]?.flag) return p.statistics[0].flag;
+    // Mapear nationality a flag emoji
+    const flags={"France":"🇫🇷","Brazil":"🇧🇷","Argentina":"🇦🇷","England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Germany":"🇩🇪","Spain":"🇪🇸","Portugal":"🇵🇹","Mexico":"🇲🇽","Morocco":"🇲🇦","USA":"🇺🇸","Norway":"🇳🇴","Egypt":"🇪🇬","South Korea":"🇰🇷","Netherlands":"🇳🇱","Croatia":"🇭🇷","Uruguay":"🇺🇾","Colombia":"🇨🇴","Ecuador":"🇪🇨","Senegal":"🇸🇳","Japan":"🇯🇵"};
+    return flags[p.player?.nationality]||"🏳️";
+  };
+
   const filtered=data.filter(p=>getVal(p).val>0);
-  const posEmoji={GK:"🧤",DEF:"🛡️",MID:"⚙️",FWD:"⚽"};
   const medals=["🥇","🥈","🥉"];
+  const posEmoji={GK:"🧤",DEF:"🛡️",MID:"⚙️",FWD:"⚽"};
 
   return(
     <div style={{padding:16}}>
       <Sec icon="📊" title={t("Estadísticas del Torneo","Tournament Stats")}/>
       <div style={{fontSize:10,color:C.gray,textAlign:"center",marginBottom:12}}>
-        🏆 FIFA Copa Mundial 2026™ · {t("Actualización en tiempo real","Live updates")}
+        ⚡ {t("Datos en tiempo real · API-Football","Live data · API-Football")}
+        {lastUpdate&&<span> · {t("Actualizado","Updated")}: {lastUpdate}</span>}
       </div>
 
       {/* Sub-tabs */}
       <div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
         {tabs.map(tb=>(
           <button key={tb.id} onClick={()=>setActive(tb.id)}
-            style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"7px 12px",borderRadius:20,
-              border:`1px solid ${active===tb.id?C.gold:C.grayDark}`,
+            style={{flexShrink:0,display:"flex",alignItems:"center",gap:5,padding:"7px 12px",
+              borderRadius:20,border:`1px solid ${active===tb.id?C.gold:C.grayDark}`,
               background:active===tb.id?C.goldDim:C.bgCard,
               color:active===tb.id?C.gold:C.gray,
               fontSize:11,cursor:"pointer",fontWeight:active===tb.id?700:400}}>
@@ -895,84 +982,100 @@ function StatsTab({t}){
 
       {/* Loading */}
       {loading&&(
-        <div style={{textAlign:"center",padding:40,color:C.gray}}>
-          <div style={{fontSize:32,marginBottom:8}}>⏳</div>
-          <div style={{fontSize:12}}>{t("Cargando estadísticas...","Loading stats...")}</div>
+        <div style={{textAlign:"center",padding:40}}>
+          <div style={{fontSize:40,marginBottom:12,animation:"pulse 1s infinite"}}>⚽</div>
+          <div style={{fontSize:13,color:C.gold,fontWeight:700}}>{t("Jalando datos del Mundial...","Fetching World Cup data...")}</div>
+          <div style={{fontSize:10,color:C.gray,marginTop:4}}>API-Football · FIFA 2026</div>
         </div>
       )}
 
-      {/* Lista */}
-      {!loading&&filtered.length===0&&(
+      {/* Error */}
+      {!loading&&error&&(
+        <div style={{textAlign:"center",padding:30,background:C.bgCard,borderRadius:14,border:`1px solid ${C.grayDark}`}}>
+          <div style={{fontSize:28,marginBottom:8}}>⚠️</div>
+          <div style={{fontSize:12,color:C.gray}}>{error}</div>
+        </div>
+      )}
+
+      {/* Sin datos */}
+      {!loading&&!error&&filtered.length===0&&(
         <div style={{textAlign:"center",padding:40,color:C.gray}}>
           <div style={{fontSize:32,marginBottom:8}}>📋</div>
-          <div style={{fontSize:12}}>{t("Sin datos aún. El torneo está comenzando.","No data yet. Tournament is just starting.")}</div>
+          <div style={{fontSize:13,fontWeight:700,color:C.white,marginBottom:4}}>{t("Sin datos aún","No data yet")}</div>
+          <div style={{fontSize:11}}>{t("El torneo está comenzando","Tournament is just starting")}</div>
         </div>
       )}
 
-      {!loading&&filtered.map((p,i)=>{
-        const {val,icon,extra=""}=getVal(p);
+      {/* Lista jugadores */}
+      {!loading&&!error&&filtered.map((p,i)=>{
+        const {val,icon,extra="",sub=""}=getVal(p);
         const isTop3=i<3;
+        const flag=getFlag(p);
+        const s=p.statistics?.[0];
+        const teamName=s?.team?.name||p.player?.nationality||"";
+        const clubName=s?.club||(s?.team?.name?s.team.name.split("(")[0].trim():"");
+        const playerPos=s?.pos||"FWD";
         return(
           <div key={i} style={{
             display:"flex",alignItems:"center",gap:12,
-            padding:"12px 14px",marginBottom:8,
-            borderRadius:14,
-            background:isTop3?`linear-gradient(135deg,${C.bgCard},${C.grayDark})`:`${C.bgCard}`,
+            padding:"12px 14px",marginBottom:8,borderRadius:14,
+            background:isTop3?`linear-gradient(135deg,${C.bgCard},${C.grayDark})`:C.bgCard,
             border:`1px solid ${isTop3?C.goldBorder:C.grayDark}`,
             boxShadow:isTop3?"0 4px 16px rgba(255,215,0,0.08)":"none"
           }}>
             {/* Posición */}
-            <div style={{width:28,textAlign:"center",fontSize:isTop3?20:14,fontWeight:900,
-              color:isTop3?C.gold:C.gray,flexShrink:0}}>
+            <div style={{width:28,textAlign:"center",fontSize:isTop3?20:13,
+              fontWeight:900,color:isTop3?C.gold:C.gray,flexShrink:0}}>
               {i<3?medals[i]:i+1}
             </div>
 
-            {/* Flag + emoji posición */}
+            {/* Flag */}
             <div style={{position:"relative",flexShrink:0}}>
-              <div style={{fontSize:28}}>{p.flag}</div>
+              <div style={{fontSize:28}}>{flag}</div>
               <div style={{position:"absolute",bottom:-2,right:-4,fontSize:10,
-                background:C.bgCard,borderRadius:4,padding:"0 2px"}}>{posEmoji[p.pos]}</div>
+                background:C.bgCard,borderRadius:4,padding:"0 2px"}}>
+                {posEmoji[playerPos]||"⚽"}
+              </div>
             </div>
 
-            {/* Info jugador */}
+            {/* Info */}
             <div style={{flex:1,minWidth:0}}>
               <div style={{fontSize:14,fontWeight:800,color:C.white,
                 overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {p.player_name}
+                {p.player?.name||p.player_name}
               </div>
               <div style={{fontSize:10,color:C.gray,marginTop:2,
                 overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                {p.team} · {p.club?p.club.split("(")[0].trim():""}
+                {flag} {teamName}
               </div>
+              {sub&&<div style={{fontSize:9,color:C.gray,marginTop:1}}>{sub}</div>}
               <div style={{fontSize:9,color:C.gray,marginTop:1}}>
-                {p.matches_played} {t("partidos","matches")}
+                {s?.games?.appearences||s?.games?.lineups||0} {t("partidos","matches")}
               </div>
             </div>
 
             {/* Valor */}
-            <div style={{textAlign:"center",flexShrink:0}}>
-              <div style={{fontSize:26,fontWeight:900,
-                color:isTop3?C.gold:C.white,lineHeight:1}}>
-                {val}
-              </div>
-              <div style={{fontSize:14}}>{icon}{extra}</div>
+            <div style={{textAlign:"center",flexShrink:0,minWidth:40}}>
+              <div style={{fontSize:28,fontWeight:900,
+                color:isTop3?C.gold:C.white,lineHeight:1}}>{val}</div>
+              <div style={{fontSize:16}}>{icon}{extra}</div>
             </div>
           </div>
         );
       })}
 
       {!loading&&filtered.length>0&&(
-        <div style={{textAlign:"center",marginTop:12,padding:"8px",
-          background:C.bgCard,borderRadius:10,
-          border:`1px solid ${C.grayDark}`}}>
-          <div style={{fontSize:10,color:C.gray}}>
-            🔄 {t("Datos actualizados manualmente por el administrador","Data manually updated by admin")}
+        <div style={{textAlign:"center",marginTop:8,padding:"6px",
+          background:C.bgCard,borderRadius:10,border:`1px solid ${C.grayDark}`}}>
+          <div style={{fontSize:9,color:C.gray}}>
+            ⚡ API-Football · v3.football.api-sports.io · Liga 1 · 2026
           </div>
         </div>
       )}
     </div>
   );
 }
+
 
 function BracketTab({t}){
   const [bracket,setBracket]=useState(()=>{
