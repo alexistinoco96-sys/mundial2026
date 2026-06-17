@@ -287,6 +287,7 @@ function Onboarding({t,onDone}){
   const [name,setName]=useState("");const [flag,setFlag]=useState("");
   const [q,setQ]=useState("");const [loading,setLoading]=useState(false);
   const [err,setErr]=useState("");const [authData,setAuthData]=useState(null);
+  const [forgotSent,setForgotSent]=useState(false);
   const filtered=TEAMS.filter(tm=>q===""||tm.name.toLowerCase().includes(q.toLowerCase()));
 
   const doLogin=async()=>{
@@ -338,6 +339,21 @@ function Onboarding({t,onDone}){
 
   const doGuest=()=>onDone({id:"g"+Date.now(),name:t("Invitado","Guest"),flag:"🌍",username:"guest",isGuest:true});
 
+  const doForgot=async()=>{
+    if(!email.trim()){setErr(t("Escribe tu email primero","Enter your email first"));return;}
+    setLoading(true);setErr("");
+    try{
+      const res=await fetch(SB_URL+"/auth/v1/recover",{
+        method:"POST",
+        headers:{"Content-Type":"application/json","apikey":SB_KEY},
+        body:JSON.stringify({email:email.trim()})
+      });
+      if(res.ok){setForgotSent(true);}
+      else{setErr(t("Error al enviar email","Error sending email"));}
+    }catch(e){setErr("Error: "+e.message);}
+    setLoading(false);
+  };
+
   return(
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#060b16,#0d1b3e)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"18px 14px 40px",overflowY:"auto"}}>
       <div style={{textAlign:"center",marginBottom:20,paddingTop:14}}>
@@ -364,6 +380,20 @@ function Onboarding({t,onDone}){
               style={{width:"100%",padding:12,background:email&&pass?`linear-gradient(135deg,${C.gold},#FFA500)`:C.grayDark,border:"none",borderRadius:12,color:email&&pass?"#000":C.gray,fontSize:14,fontWeight:900,cursor:email&&pass?"pointer":"default",marginBottom:10}}>
               {loading?"⏳...":mode==="login"?t("Entrar","Sign in"):t("Crear cuenta","Create account")}
             </button>
+            {mode==="login"&&(
+              <div style={{textAlign:"center",marginBottom:8}}>
+                {forgotSent?(
+                  <div style={{background:"rgba(0,200,100,0.1)",border:"1px solid rgba(0,200,100,0.3)",borderRadius:8,padding:"10px 12px",fontSize:12,color:"#00C864"}}>
+                    ✅ {t("Email enviado. Revisa tu bandeja de entrada","Email sent. Check your inbox")} 📧
+                  </div>
+                ):(
+                  <button onClick={doForgot} disabled={loading}
+                    style={{background:"transparent",border:"none",color:C.gold,fontSize:12,cursor:"pointer",textDecoration:"underline",padding:"4px 0"}}>
+                    🔑 {t("Olvidé mi contraseña","Forgot my password")}
+                  </button>
+                )}
+              </div>
+            )}
             <div style={{textAlign:"center"}}>
               <div style={{fontSize:10,color:C.gray,marginBottom:8}}>— {t("o continua sin cuenta","or continue without account")} —</div>
               <button onClick={doGuest} style={{background:"transparent",border:`1px solid ${C.grayDark}`,borderRadius:10,padding:"8px 20px",color:C.gray,fontSize:12,cursor:"pointer"}}>👤 {t("Modo invitado","Guest mode")}</button>
