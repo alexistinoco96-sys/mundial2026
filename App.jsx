@@ -851,7 +851,9 @@ function StatsTab({t}){
     {id:"goals",icon:"⚽",label:t("Goleadores","Top Scorers")},
     {id:"assists",icon:"🎯",label:t("Asistencias","Assists")},
     {id:"clean_sheets",icon:"🧤",label:t("Portería Imbatible","Clean Sheets")},
-    {id:"yellow_cards",icon:"🟨",label:t("Tarjetas","Cards")},
+    {id:"yellow_cards",icon:"🟨",label:t("Amarillas","Yellow")},
+    {id:"red_cards",icon:"🟥",label:t("Rojas","Red")},
+    {id:"rating",icon:"⭐",label:t("Rating","Rating")},
   ];
 
   const fetchFromAPI = (endpoint) => {
@@ -869,6 +871,8 @@ function StatsTab({t}){
     if(active==="goals") endpoint="players/topscorers?";
     else if(active==="assists") endpoint="players/topassists?";
     else if(active==="yellow_cards") endpoint="players/topyellowcards?";
+    else if(active==="red_cards") endpoint="players/topredcards?";
+    else if(active==="rating") endpoint="players/topscorers?";
     else if(active==="clean_sheets") endpoint="players/topscorers?"; // usamos goalkeepers de Supabase
 
     // Para portería imbatible usamos Supabase (no hay endpoint directo en API-Football free)
@@ -905,7 +909,8 @@ function StatsTab({t}){
     .then(d=>{
       if(d.errors && Object.keys(d.errors).length>0){
         // Si hay error de API, caemos a Supabase como respaldo
-        const col = active==="goals"?"goals":active==="assists"?"assists":"yellow_cards";
+        const colMap={"goals":"goals","assists":"assists","yellow_cards":"yellow_cards","red_cards":"red_cards","rating":"goals"};
+        const col=colMap[active]||"goals";
         return fetch(`${SB_URL}/rest/v1/tournament_stats?select=player_name,team,flag,pos,club,goals,assists,yellow_cards,red_cards,matches_played&order=${col}.desc&limit=20`,{
           headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
         })
@@ -940,10 +945,15 @@ function StatsTab({t}){
   const getVal=(p)=>{
     const s=p.statistics?.[0];
     if(!s) return {val:0,icon:"⚽"};
-    if(active==="goals") return {val:s.goals?.total||0,icon:"⚽"};
-    if(active==="assists") return {val:s.goals?.assists||0,icon:"🎯"};
+    if(active==="goals") return {val:s.goals?.total||0,icon:"⚽",sub:s.games?.appearences?`${s.games.appearences} partidos`:""};
+    if(active==="assists") return {val:s.goals?.assists||0,icon:"🎯",sub:s.games?.appearences?`${s.games.appearences} partidos`:""};
     if(active==="clean_sheets") return {val:s.clean_sheet||0,icon:"🛡️",sub:`${s.goals?.conceded||0} goles recibidos`};
-    if(active==="yellow_cards") return {val:s.cards?.yellow||0,icon:"🟨",extra:s.cards?.red>0?` +${s.cards.red}🟥`:""};
+    if(active==="yellow_cards") return {val:s.cards?.yellow||0,icon:"🟨",sub:s.cards?.red>0?`+${s.cards.red} 🟥 roja`:""};
+    if(active==="red_cards") return {val:s.cards?.red||0,icon:"🟥",sub:s.cards?.yellow>0?`+${s.cards.yellow} 🟨 amarillas`:""};
+    if(active==="rating"){
+      const r=parseFloat(s.games?.rating||0);
+      return {val:r?r.toFixed(1):"-",icon:"⭐",sub:s.games?.appearences?`${s.games.appearences} partidos`:""};
+    }
     return {val:0,icon:""};
   };
 
@@ -954,7 +964,11 @@ function StatsTab({t}){
     return flags[p.player?.nationality]||"🏳️";
   };
 
-  const filtered=data.filter(p=>getVal(p).val>0);
+  const filtered=data.filter(p=>{
+    const v=getVal(p).val;
+    if(active==="rating") return v&&v!=="-"&&parseFloat(v)>0;
+    return Number(v)>0;
+  });
   const medals=["🥇","🥈","🥉"];
   const posEmoji={GK:"🧤",DEF:"🛡️",MID:"⚙️",FWD:"⚽"};
 
@@ -1055,10 +1069,11 @@ function StatsTab({t}){
             </div>
 
             {/* Valor */}
-            <div style={{textAlign:"center",flexShrink:0,minWidth:40}}>
-              <div style={{fontSize:28,fontWeight:900,
+            <div style={{textAlign:"center",flexShrink:0,minWidth:48}}>
+              <div style={{fontSize:active==="rating"?22:28,fontWeight:900,
                 color:isTop3?C.gold:C.white,lineHeight:1}}>{val}</div>
-              <div style={{fontSize:16}}>{icon}{extra}</div>
+              <div style={{fontSize:14}}>{icon}</div>
+              {extra&&<div style={{fontSize:9,color:C.gray}}>{extra}</div>}
             </div>
           </div>
         );
